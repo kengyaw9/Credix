@@ -63,8 +63,8 @@ function NewFinancingContent() {
     fetch(`/api/v1/customers/${customerId}`)
       .then(res => res.json())
       .then(json => {
-        if (json.success) {
-          setCustomer(json.data);
+        if (json.success && (json.data?.customer || json.data)) {
+          setCustomer(json.data.customer || json.data);
         } else {
           // If customer not found, redirect to search
           router.push('/customers?selectForLoan=true');
