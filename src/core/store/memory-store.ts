@@ -1,9 +1,9 @@
 /**
  * Multi-Tenant Data Store with Strict Isolation
  * 
- * Implements the core business entities in memory so the application can run 
- * instantly without external database setup, while perfectly enforcing the same
- * tenant isolation rules as the PostgreSQL Row-Level Security (RLS) schema.
+ * Expanded Customer Information File (CIF) containing demographic, address,
+ * employment, income affordability, and emergency contact details
+ * needed for financing underwriting and collection.
  */
 
 import { ScheduleItem } from '../financing/types';
@@ -19,7 +19,7 @@ export interface User {
   id: string;
   tenantId: string;
   email: string;
-  password: string; // Plain for demo/prototype; hashed in production
+  password: string;
   fullName: string;
   role: 'ADMIN' | 'MANAGER' | 'OFFICER';
 }
@@ -27,14 +27,52 @@ export interface User {
 export interface Customer {
   id: string;
   tenantId: string;
-  idType: 'NRIC' | 'PASSPORT' | 'BRN';
+  
+  // 1. Primary & Identity Information (M30 Tab 1)
+  idType: 'NRIC' | 'PASSPORT' | 'POLICE_ARMY' | 'BRN';
   idNumber: string;
   fullName: string;
-  phone: string;
+  title?: string; // Mr, Mrs, Ms, Dato, Dr
+  dob: string; // YYYY-MM-DD
+  gender: 'MALE' | 'FEMALE';
+  maritalStatus: 'SINGLE' | 'MARRIED' | 'DIVORCED' | 'WIDOWED';
+  race?: string; // Malay, Chinese, Indian, Others
+  religion?: string; // Islam, Buddha, Hindu, Christian, Others
+  mothersMaidenName?: string; // Security verification
+
+  // 2. Contact & Address Information (M30 Tab 2)
+  phone: string; // Mobile
+  homePhone?: string;
+  officePhone?: string;
   email: string;
-  address?: string;
+  residentialAddress: string;
+  postcode?: string;
+  city?: string;
+  state?: string;
+  residenceOwnership: 'OWN' | 'RENTED' | 'FAMILY' | 'MORTGAGED';
+  lengthOfStayYears?: number;
+  correspondenceAddress?: string;
+
+  // 3. Employment & Income Assessment (M30 Tab 3 & 4)
+  employerName: string;
+  occupation: string;
+  employmentType: 'PERMANENT' | 'CONTRACT' | 'SELF_EMPLOYED' | 'GOVERNMENT';
+  employmentSector?: string;
+  employmentDate?: string; // Date joined
+  monthlyGrossIncome: number;
+  monthlyNetIncome: number;
+  monthlyCommitments: number; // Existing bank loans, car, credit cards
+  monthlyExpenses?: number;
+
+  // 4. Emergency Contact / Next of Kin (M30 Tab 4)
+  emergencyContactName: string;
+  emergencyContactRelationship: string; // Spouse, Parent, Sibling, Friend
+  emergencyContactPhone: string;
+
+  // 5. Disbursement & Repayment Bank Details
   bankName: string;
   bankAccountNo: string;
+
   createdAt: string;
 }
 
@@ -97,7 +135,7 @@ class MultiTenantDatabase {
   public users: User[] = [
     {
       id: 'usr-1',
-      tenantId: '11111111-1111-1111-1111-111111111111', // Apex
+      tenantId: '11111111-1111-1111-1111-111111111111',
       email: 'officer@apex.com',
       password: 'password123',
       fullName: 'Sarah Tan (Senior Credit Officer)',
@@ -105,7 +143,7 @@ class MultiTenantDatabase {
     },
     {
       id: 'usr-2',
-      tenantId: '22222222-2222-2222-2222-222222222222', // Metro
+      tenantId: '22222222-2222-2222-2222-222222222222',
       email: 'officer@metro.com',
       password: 'password123',
       fullName: 'Kamal Hassan (Financing Manager)',
@@ -116,39 +154,108 @@ class MultiTenantDatabase {
   public customers: Customer[] = [
     {
       id: 'cust-101',
-      tenantId: '11111111-1111-1111-1111-111111111111', // Belongs to Apex Credit
+      tenantId: '11111111-1111-1111-1111-111111111111', // Apex Credit
       idType: 'NRIC',
       idNumber: '880101-14-5555',
       fullName: 'Ahmad bin Razak',
+      title: 'Mr',
+      dob: '1988-01-01',
+      gender: 'MALE',
+      maritalStatus: 'MARRIED',
+      race: 'Malay',
+      religion: 'Islam',
+      mothersMaidenName: 'Fatimah binti Hassan',
       phone: '+6012-3456789',
+      homePhone: '+603-77889900',
+      officePhone: '+603-21665544',
       email: 'ahmad.razak@example.com',
-      address: 'No 15, Jalan Melati 3, 50480 Kuala Lumpur',
+      residentialAddress: 'No 15, Jalan Melati 3, Taman Melati',
+      postcode: '50480',
+      city: 'Kuala Lumpur',
+      state: 'Wilayah Persekutuan',
+      residenceOwnership: 'OWN',
+      lengthOfStayYears: 6,
+      correspondenceAddress: 'Same as residential',
+      employerName: 'Petronas Dagangan Berhad',
+      occupation: 'Senior Logistics Specialist',
+      employmentType: 'PERMANENT',
+      employmentSector: 'Oil & Gas',
+      employmentDate: '2016-04-01',
+      monthlyGrossIncome: 6500,
+      monthlyNetIncome: 5200,
+      monthlyCommitments: 1600, // Housing & car loan
+      monthlyExpenses: 1800,
+      emergencyContactName: 'Nurul Huda (Spouse)',
+      emergencyContactRelationship: 'Spouse',
+      emergencyContactPhone: '+6012-9988776',
       bankName: 'Maybank',
       bankAccountNo: '114012345678',
       createdAt: '2026-01-01T08:00:00Z',
     },
     {
       id: 'cust-102',
-      tenantId: '11111111-1111-1111-1111-111111111111', // Also Belongs to Apex Credit
+      tenantId: '11111111-1111-1111-1111-111111111111', // Apex Credit
       idType: 'NRIC',
       idNumber: '951120-10-6721',
       fullName: 'Lim Mei Ling',
+      title: 'Ms',
+      dob: '1995-11-20',
+      gender: 'FEMALE',
+      maritalStatus: 'SINGLE',
+      race: 'Chinese',
+      religion: 'Buddha',
+      mothersMaidenName: 'Tan Siew Lan',
       phone: '+6016-8877665',
       email: 'meiling.lim@example.com',
-      address: '22A, Lorong Helang, 47301 Petaling Jaya',
+      residentialAddress: '22A, Lorong Helang, Damansara Utama',
+      postcode: '47301',
+      city: 'Petaling Jaya',
+      state: 'Selangor',
+      residenceOwnership: 'RENTED',
+      lengthOfStayYears: 3,
+      employerName: 'Shopee Malaysia Sdn Bhd',
+      occupation: 'Digital Marketing Lead',
+      employmentType: 'PERMANENT',
+      employmentSector: 'E-Commerce / Tech',
+      employmentDate: '2020-08-15',
+      monthlyGrossIncome: 5800,
+      monthlyNetIncome: 4800,
+      monthlyCommitments: 1200,
+      monthlyExpenses: 1500,
+      emergencyContactName: 'Lim Chee Keong (Father)',
+      emergencyContactRelationship: 'Parent',
+      emergencyContactPhone: '+6016-2233445',
       bankName: 'Public Bank',
       bankAccountNo: '3190887722',
       createdAt: '2026-02-10T11:00:00Z',
     },
     {
       id: 'cust-201',
-      tenantId: '22222222-2222-2222-2222-222222222222', // Belongs to Metro Micro
+      tenantId: '22222222-2222-2222-2222-222222222222', // Metro Micro
       idType: 'NRIC',
       idNumber: '920315-10-8888',
       fullName: 'Tan Wei Ming',
+      title: 'Mr',
+      dob: '1992-03-15',
+      gender: 'MALE',
+      maritalStatus: 'MARRIED',
+      race: 'Chinese',
       phone: '+6017-9876543',
       email: 'tan.wm@example.com',
-      address: 'Lot 45, Jalan Tun Razak, Johor Bahru',
+      residentialAddress: 'Lot 45, Jalan Tun Razak, Johor Bahru',
+      postcode: '80000',
+      city: 'Johor Bahru',
+      state: 'Johor',
+      residenceOwnership: 'MORTGAGED',
+      employerName: 'TWM Global Trading',
+      occupation: 'Sole Proprietor',
+      employmentType: 'SELF_EMPLOYED',
+      monthlyGrossIncome: 9000,
+      monthlyNetIncome: 7500,
+      monthlyCommitments: 2500,
+      emergencyContactName: 'Alice Tan (Spouse)',
+      emergencyContactRelationship: 'Spouse',
+      emergencyContactPhone: '+6017-5544332',
       bankName: 'CIMB Bank',
       bankAccountNo: '8001234567',
       createdAt: '2026-02-01T09:00:00Z',
@@ -163,7 +270,6 @@ class MultiTenantDatabase {
   }
 
   private seedInitialLoans() {
-    // Initial loan for Ahmad under Apex Credit
     const ahmadSchedule: ScheduleItem[] = [
       {
         installmentNo: 1,
@@ -237,7 +343,7 @@ class MultiTenantDatabase {
 
     this.accounts.push({
       id: 'acc-101',
-      tenantId: '11111111-1111-1111-1111-111111111111', // Apex
+      tenantId: '11111111-1111-1111-1111-111111111111',
       customerId: 'cust-101',
       accountNo: 'APX-2026-0001',
       calcMethod: 'FLAT_RATE',
@@ -258,7 +364,6 @@ class MultiTenantDatabase {
       createdAt: '2026-01-01T08:30:00Z',
     });
 
-    // Metro initial loan
     const metroSchedule: ScheduleItem[] = [
       {
         installmentNo: 1,
@@ -298,7 +403,7 @@ class MultiTenantDatabase {
 
     this.accounts.push({
       id: 'acc-201',
-      tenantId: '22222222-2222-2222-2222-222222222222', // Metro Micro
+      tenantId: '22222222-2222-2222-2222-222222222222',
       customerId: 'cust-201',
       accountNo: 'MM-2026-0001',
       calcMethod: 'FLAT_RATE',

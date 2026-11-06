@@ -17,7 +17,7 @@ export async function POST(req: NextRequest) {
       return apiError('Missing required fields: idNumber, fullName, phone');
     }
 
-    // Check duplicate within the same tenant
+    // Check duplicate IC within same tenant
     const existing = db.getCustomers(tenantId).find(c => c.idNumber === body.idNumber);
     if (existing) {
       return apiError(`Customer with ID number ${body.idNumber} already exists in your institute.`);
@@ -27,8 +27,36 @@ export async function POST(req: NextRequest) {
       idType: body.idType || 'NRIC',
       idNumber: body.idNumber,
       fullName: body.fullName,
+      title: body.title || 'Mr',
+      dob: body.dob || '1990-01-01',
+      gender: body.gender || 'MALE',
+      maritalStatus: body.maritalStatus || 'SINGLE',
+      race: body.race || '',
+      religion: body.religion || '',
+      mothersMaidenName: body.mothersMaidenName || '',
       phone: body.phone,
+      homePhone: body.homePhone || '',
+      officePhone: body.officePhone || '',
       email: body.email || '',
+      residentialAddress: body.residentialAddress || body.address || '',
+      postcode: body.postcode || '',
+      city: body.city || '',
+      state: body.state || '',
+      residenceOwnership: body.residenceOwnership || 'RENTED',
+      lengthOfStayYears: Number(body.lengthOfStayYears) || 1,
+      correspondenceAddress: body.correspondenceAddress || '',
+      employerName: body.employerName || '',
+      occupation: body.occupation || '',
+      employmentType: body.employmentType || 'PERMANENT',
+      employmentSector: body.employmentSector || '',
+      employmentDate: body.employmentDate || '',
+      monthlyGrossIncome: Number(body.monthlyGrossIncome) || 0,
+      monthlyNetIncome: Number(body.monthlyNetIncome) || 0,
+      monthlyCommitments: Number(body.monthlyCommitments) || 0,
+      monthlyExpenses: Number(body.monthlyExpenses) || 0,
+      emergencyContactName: body.emergencyContactName || '',
+      emergencyContactRelationship: body.emergencyContactRelationship || '',
+      emergencyContactPhone: body.emergencyContactPhone || '',
       bankName: body.bankName || '',
       bankAccountNo: body.bankAccountNo || '',
     });

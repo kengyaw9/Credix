@@ -83,21 +83,16 @@ export default function SettlementPage() {
   return (
     <DashboardLayout>
       <div className="max-w-3xl mx-auto space-y-6">
-        {/* Back to Dashboard Button & Header */}
-        <div className="flex items-center space-x-3">
-          <Link
-            href="/"
-            className="inline-flex items-center space-x-1.5 px-3 py-2 bg-white hover:bg-slate-100 text-slate-700 text-xs font-bold rounded-xl border border-slate-200/90 transition shadow-2xs"
-          >
-            <ArrowLeft className="w-4 h-4" />
-            <span>Back to Dashboard</span>
-          </Link>
-          <div>
-            <h1 className="text-2xl font-bold text-slate-900 tracking-tight">Early Settlement &amp; Rebate</h1>
-            <p className="text-xs text-slate-500">
-              Real-time unearned profit discount (*Ibra&apos;*) and final payoff quotation
-            </p>
+        {/* Header */}
+        <div className="bg-white p-6 rounded-3xl border border-slate-200/90 shadow-2xs space-y-1">
+          <div className="flex items-center space-x-2 text-indigo-600">
+            <DollarSign className="w-5 h-5" />
+            <span className="text-xs font-bold uppercase tracking-wider">Loan Servicing</span>
           </div>
+          <h1 className="text-2xl font-bold text-slate-900 tracking-tight">Early Settlement &amp; Rebate (Ibra&apos;)</h1>
+          <p className="text-xs text-slate-500">
+            Real-time unearned profit discount and final payoff quotation
+          </p>
         </div>
 
         {/* Calculation Box */}

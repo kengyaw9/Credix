@@ -3,7 +3,6 @@
 -- Designed for PostgreSQL (AWS RDS / GCP Cloud SQL / Supabase / Neon)
 -- =============================================================================
 
--- Enable UUID extension
 CREATE EXTENSION IF NOT EXISTS "pgcrypto";
 
 -- -----------------------------------------------------------------------------
@@ -11,50 +10,89 @@ CREATE EXTENSION IF NOT EXISTS "pgcrypto";
 -- -----------------------------------------------------------------------------
 CREATE TABLE IF NOT EXISTS tenants (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    code VARCHAR(50) UNIQUE NOT NULL,       -- e.g. "APEX_CREDIT", "METRO_FINANCE"
+    code VARCHAR(50) UNIQUE NOT NULL,
     name VARCHAR(255) NOT NULL,
     contact_email VARCHAR(255),
     phone VARCHAR(50),
-    status VARCHAR(20) DEFAULT 'ACTIVE',    -- ACTIVE, SUSPENDED
+    status VARCHAR(20) DEFAULT 'ACTIVE',
     created_at TIMESTAMPTZ DEFAULT NOW(),
     updated_at TIMESTAMPTZ DEFAULT NOW()
 );
 
 -- -----------------------------------------------------------------------------
--- 2. Users (Officers & Admins of each Financial Institution)
+-- 2. Users (Staff / Officers / Managers of each Financial Institution)
 -- -----------------------------------------------------------------------------
 CREATE TABLE IF NOT EXISTS users (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     tenant_id UUID NOT NULL REFERENCES tenants(id) ON DELETE CASCADE,
     email VARCHAR(255) NOT NULL,
+    password_hash VARCHAR(255) NOT NULL,
     full_name VARCHAR(255) NOT NULL,
-    role VARCHAR(50) DEFAULT 'OFFICER',      -- ADMIN, MANAGER, OFFICER
+    role VARCHAR(50) DEFAULT 'OFFICER',
     created_at TIMESTAMPTZ DEFAULT NOW(),
     UNIQUE (tenant_id, email)
 );
 
 -- -----------------------------------------------------------------------------
--- 3. Customers (CIF Lite - Borrowers)
+-- 3. Customers (CIF Profile - Expanded for Loan Underwriting & Affordability)
 -- Strict Isolation: Each institute only sees their own customers.
 -- -----------------------------------------------------------------------------
 CREATE TABLE IF NOT EXISTS customers (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     tenant_id UUID NOT NULL REFERENCES tenants(id) ON DELETE CASCADE,
-    id_type VARCHAR(20) NOT NULL,           -- NRIC, PASSPORT, BRN
+    
+    -- Primary / Identity Information
+    id_type VARCHAR(20) NOT NULL,           -- NRIC, PASSPORT, POLICE_ARMY, BRN
     id_number VARCHAR(50) NOT NULL,         -- e.g. "900101-14-1234"
     full_name VARCHAR(255) NOT NULL,
-    phone VARCHAR(30) NOT NULL,
+    title VARCHAR(20),                      -- Mr, Mrs, Ms, Dr, Dato
+    dob DATE NOT NULL,                      -- Birth Date (Age eligibility)
+    gender VARCHAR(10) NOT NULL,            -- MALE, FEMALE
+    marital_status VARCHAR(20) NOT NULL,    -- SINGLE, MARRIED, DIVORCED, WIDOWED
+    race VARCHAR(50),                       -- Malay, Chinese, Indian, Others
+    religion VARCHAR(50),                   -- Islam, Buddha, Hindu, Christian, Others
+    mothers_maiden_name VARCHAR(255),       -- Security verification
+    
+    -- Contact & Residential Address
+    phone VARCHAR(30) NOT NULL,             -- Primary Mobile
+    home_phone VARCHAR(30),
+    office_phone VARCHAR(30),
     email VARCHAR(255),
-    address TEXT,
-    bank_name VARCHAR(100),
-    bank_account_no VARCHAR(50),
+    residential_address TEXT NOT NULL,
+    postcode VARCHAR(10),
+    city VARCHAR(100),
+    state VARCHAR(100),
+    residence_ownership VARCHAR(20) DEFAULT 'RENTED', -- OWN, RENTED, FAMILY, MORTGAGED
+    length_of_stay_years INT DEFAULT 1,
+    correspondence_address TEXT,
+    
+    -- Employment & Affordability Assessment (Underwriting)
+    employer_name VARCHAR(255) NOT NULL,
+    occupation VARCHAR(255) NOT NULL,
+    employment_type VARCHAR(50) DEFAULT 'PERMANENT', -- PERMANENT, CONTRACT, SELF_EMPLOYED, GOVERNMENT
+    employment_sector VARCHAR(100),
+    employment_date DATE,
+    monthly_gross_income NUMERIC(15,2) NOT NULL DEFAULT 0,
+    monthly_net_income NUMERIC(15,2) NOT NULL DEFAULT 0,
+    monthly_commitments NUMERIC(15,2) DEFAULT 0,    -- Existing external loans
+    monthly_expenses NUMERIC(15,2) DEFAULT 0,
+    
+    -- Emergency Contact / Next of Kin (Recovery & Collection)
+    emergency_contact_name VARCHAR(255) NOT NULL,
+    emergency_contact_relationship VARCHAR(50) NOT NULL,
+    emergency_contact_phone VARCHAR(30) NOT NULL,
+    
+    -- Disbursement Bank Account
+    bank_name VARCHAR(100) NOT NULL,
+    bank_account_no VARCHAR(50) NOT NULL,
+    
     created_at TIMESTAMPTZ DEFAULT NOW(),
     updated_at TIMESTAMPTZ DEFAULT NOW(),
-    UNIQUE (tenant_id, id_number)           -- Same IC can borrow from multiple institutes independently
+    UNIQUE (tenant_id, id_number)
 );
 
 -- -----------------------------------------------------------------------------
--- 4. Financing Accounts (The Loans)
+-- 4. Financing Accounts (Loans)
 -- -----------------------------------------------------------------------------
 CREATE TABLE IF NOT EXISTS financing_accounts (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -63,18 +101,16 @@ CREATE TABLE IF NOT EXISTS financing_accounts (
     account_no VARCHAR(50) NOT NULL,
     calc_method VARCHAR(20) NOT NULL,       -- 'FLAT_RATE' or 'REDUCING_BALANCE'
     principal_amount NUMERIC(15,2) NOT NULL,
-    profit_rate_pa NUMERIC(6,4) NOT NULL,   -- e.g. 0.0800 for 8.00% p.a.
+    profit_rate_pa NUMERIC(6,4) NOT NULL,
     tenor_months INT NOT NULL,
     total_profit NUMERIC(15,2) NOT NULL,
     total_payable NUMERIC(15,2) NOT NULL,
     monthly_installment NUMERIC(15,2) NOT NULL,
-    late_fee_rate_pa NUMERIC(6,4) DEFAULT 0.0100, -- 1.0% p.a. default late fee
+    late_fee_rate_pa NUMERIC(6,4) DEFAULT 0.0100,
     
-    -- Upfront Fees
     processing_fee NUMERIC(15,2) DEFAULT 0,
     stamp_duty_fee NUMERIC(15,2) DEFAULT 0,
     
-    -- Disbursement details
     disbursed_amount NUMERIC(15,2),
     disbursed_at TIMESTAMPTZ,
     payout_ref VARCHAR(100),
@@ -100,7 +136,7 @@ CREATE TABLE IF NOT EXISTS financing_schedules (
     principal_paid NUMERIC(15,2) DEFAULT 0,
     profit_paid NUMERIC(15,2) DEFAULT 0,
     paid_at TIMESTAMPTZ,
-    status VARCHAR(20) DEFAULT 'UNPAID',    -- UNPAID, PARTIAL, PAID
+    status VARCHAR(20) DEFAULT 'UNPAID',
     UNIQUE (financing_id, installment_no)
 );
 
@@ -111,30 +147,24 @@ CREATE TABLE IF NOT EXISTS financing_transactions (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     tenant_id UUID NOT NULL REFERENCES tenants(id) ON DELETE CASCADE,
     financing_id UUID NOT NULL REFERENCES financing_accounts(id) ON DELETE CASCADE,
-    tx_type VARCHAR(30) NOT NULL,           -- DISBURSEMENT, REPAYMENT, LATE_FEE, SETTLEMENT
+    tx_type VARCHAR(30) NOT NULL,
     amount NUMERIC(15,2) NOT NULL,
     allocated_late_fee NUMERIC(15,2) DEFAULT 0,
     allocated_profit NUMERIC(15,2) DEFAULT 0,
     allocated_principal NUMERIC(15,2) DEFAULT 0,
     excess_amount NUMERIC(15,2) DEFAULT 0,
-    payment_method VARCHAR(50),             -- BANK_TRANSFER, FPX, CASH, CHEQUE
+    payment_method VARCHAR(50),
     reference_no VARCHAR(100),
     remarks TEXT,
     transacted_at TIMESTAMPTZ DEFAULT NOW()
 );
 
--- =============================================================================
--- ROW LEVEL SECURITY (RLS) POLICIES
--- The database itself blocks any query where tenant_id != current tenant context
--- =============================================================================
-
+-- Row-Level Security
 ALTER TABLE customers ENABLE ROW LEVEL SECURITY;
 ALTER TABLE financing_accounts ENABLE ROW LEVEL SECURITY;
 ALTER TABLE financing_schedules ENABLE ROW LEVEL SECURITY;
 ALTER TABLE financing_transactions ENABLE ROW LEVEL SECURITY;
 
--- Dynamic tenant context policy:
--- Every API request sets: SET LOCAL app.current_tenant_id = 'tenant-uuid-here';
 CREATE POLICY tenant_isolation_customers ON customers
     FOR ALL USING (tenant_id = NULLIF(current_setting('app.current_tenant_id', true), '')::UUID);
 
@@ -146,9 +176,3 @@ CREATE POLICY tenant_isolation_schedules ON financing_schedules
 
 CREATE POLICY tenant_isolation_transactions ON financing_transactions
     FOR ALL USING (tenant_id = NULLIF(current_setting('app.current_tenant_id', true), '')::UUID);
-
--- Performance Indexes
-CREATE INDEX IF NOT EXISTS idx_customers_tenant ON customers(tenant_id, id_number);
-CREATE INDEX IF NOT EXISTS idx_accounts_tenant ON financing_accounts(tenant_id, status);
-CREATE INDEX IF NOT EXISTS idx_schedules_due ON financing_schedules(tenant_id, due_date, status);
-CREATE INDEX IF NOT EXISTS idx_transactions_tenant ON financing_transactions(tenant_id, financing_id);
