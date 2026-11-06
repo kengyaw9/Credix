@@ -152,12 +152,12 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
               <span>Register Borrower</span>
             </Link>
             <Link
-              href="/financing/new"
+              href="/customers?selectForLoan=true"
               onClick={() => setMobileMenuOpen(false)}
               className="flex items-center space-x-2 text-xs font-semibold text-slate-300 hover:text-white hover:bg-slate-800 p-2 rounded-xl transition"
             >
               <PlusCircle className="w-3.5 h-3.5 text-emerald-400" />
-              <span>Create Financing</span>
+              <span>New Loan</span>
             </Link>
           </div>
         </div>

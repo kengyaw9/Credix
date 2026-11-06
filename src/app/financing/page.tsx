@@ -59,11 +59,11 @@ export default function FinancingListPage() {
           </div>
 
           <Link
-            href="/financing/new"
+            href="/customers?selectForLoan=true"
             className="inline-flex items-center space-x-2 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold px-4 py-2.5 rounded-xl shadow-sm transition"
           >
             <PlusCircle className="w-4 h-4" />
-            <span>New Facility Calculator</span>
+            <span>New Loan</span>
           </Link>
         </div>
 

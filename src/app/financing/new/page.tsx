@@ -6,19 +6,18 @@ import Link from 'next/link';
 import DashboardLayout from '@/components/layout/DashboardLayout';
 import {
   ArrowLeft,
-  Search,
-  CheckCircle2,
   DollarSign,
   ArrowRight,
   Sparkles,
-  User,
+  Lock,
   UserCheck,
-  Building2,
   CreditCard,
   Phone,
-  AlertTriangle,
-  RotateCcw,
-  UserPlus
+  Briefcase,
+  AlertCircle,
+  Search,
+  CheckCircle2,
+  TrendingUp
 } from 'lucide-react';
 import { Customer } from '@/core/store/memory-store';
 import { ScheduleItem } from '@/core/financing/types';
@@ -27,8 +26,8 @@ function NewFinancingContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
 
-  // URL Query pre-fills (from Simulator or Customer Profile)
-  const queryCustomerId = searchParams.get('customerId') || '';
+  // URL Query pre-fills
+  const customerId = searchParams.get('customerId') || '';
   const queryPrincipal = searchParams.get('principal');
   const queryRate = searchParams.get('rate');
   const queryTenor = searchParams.get('tenor');
@@ -36,10 +35,8 @@ function NewFinancingContent() {
   const queryProcFee = searchParams.get('procFee');
   const queryStampDuty = searchParams.get('stampDuty');
 
-  const [customers, setCustomers] = useState<Customer[]>([]);
-  const [loadingCustomers, setLoadingCustomers] = useState(true);
-  const [customerSearch, setCustomerSearch] = useState('');
-  const [selectedCustomerId, setSelectedCustomerId] = useState<string>(queryCustomerId);
+  const [customer, setCustomer] = useState<Customer | null>(null);
+  const [loadingCustomer, setLoadingCustomer] = useState(true);
 
   const [form, setForm] = useState({
     principalAmount: queryPrincipal ? Number(queryPrincipal) : 10000,
@@ -56,38 +53,26 @@ function NewFinancingContent() {
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  // Load all institute customers
+  // Fetch the specific customer by ID
   useEffect(() => {
-    fetch('/api/v1/customers')
+    if (!customerId) {
+      setLoadingCustomer(false);
+      return;
+    }
+
+    fetch(`/api/v1/customers/${customerId}`)
       .then(res => res.json())
       .then(json => {
-        if (json.success && Array.isArray(json.data)) {
-          setCustomers(json.data);
-          // If query param matches an existing customer, select it
-          if (queryCustomerId && json.data.some((c: Customer) => c.id === queryCustomerId)) {
-            setSelectedCustomerId(queryCustomerId);
-          }
+        if (json.success) {
+          setCustomer(json.data);
+        } else {
+          // If customer not found, redirect to search
+          router.push('/customers?selectForLoan=true');
         }
       })
-      .finally(() => setLoadingCustomers(false));
-  }, [queryCustomerId]);
-
-  // Selected customer object
-  const selectedCustomer = useMemo(() => {
-    return customers.find(c => c.id === selectedCustomerId) || null;
-  }, [customers, selectedCustomerId]);
-
-  // Filtered customers for search picker (searches name, NRIC, phone, employer)
-  const filteredCustomers = useMemo(() => {
-    if (!customerSearch.trim()) return customers.slice(0, 5); // default show first 5
-    const q = customerSearch.toLowerCase().trim();
-    return customers.filter(c =>
-      c.fullName.toLowerCase().includes(q) ||
-      c.idNumber.toLowerCase().includes(q) ||
-      (c.phone && c.phone.includes(q)) ||
-      (c.employerName && c.employerName.toLowerCase().includes(q))
-    ).slice(0, 8);
-  }, [customers, customerSearch]);
+      .catch(() => router.push('/customers?selectForLoan=true'))
+      .finally(() => setLoadingCustomer(false));
+  }, [customerId, router]);
 
   // Compute live schedule
   const handlePreview = async () => {
@@ -124,15 +109,15 @@ function NewFinancingContent() {
 
   // DSR computation
   const proposedInstallment = previewSummary?.monthlyInstallment || 0;
-  const netIncome = selectedCustomer?.monthlyNetIncome || 0;
-  const existingCommitments = selectedCustomer?.monthlyCommitments || 0;
+  const netIncome = customer?.monthlyNetIncome || 0;
+  const existingCommitments = customer?.monthlyCommitments || 0;
   const totalCommitmentsWithNewLoan = existingCommitments + proposedInstallment;
   const projectedDsr = netIncome > 0 ? Math.round((totalCommitmentsWithNewLoan / netIncome) * 100) : 0;
 
   const handleCreateFacility = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!selectedCustomerId) {
-      alert('Please search and select a borrower first');
+    if (!customer) {
+      alert('Please select a customer first');
       return;
     }
     setSubmitting(true);
@@ -144,7 +129,7 @@ function NewFinancingContent() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           ...form,
-          customerId: selectedCustomerId,
+          customerId: customer.id,
         }),
       });
       const data = await res.json();
@@ -162,6 +147,33 @@ function NewFinancingContent() {
 
   const netDisbursement = Math.max(0, form.principalAmount - (form.processingFee || 0) - (form.stampDutyFee || 0));
 
+  // If no customer ID was passed, prompt user to search customer first
+  if (!loadingCustomer && !customer) {
+    return (
+      <div className="max-w-2xl mx-auto my-12 bg-white p-8 rounded-3xl border border-slate-200 shadow-sm text-center space-y-5">
+        <div className="w-16 h-16 rounded-3xl bg-indigo-50 text-indigo-600 flex items-center justify-center mx-auto">
+          <Search className="w-8 h-8" />
+        </div>
+        <div className="space-y-1">
+          <h2 className="text-xl font-bold text-slate-900">Please Select a Borrower First</h2>
+          <p className="text-xs text-slate-500 max-w-md mx-auto">
+            To create a new loan facility, you must first select an active customer profile from the Customer Information File (CIF).
+          </p>
+        </div>
+        <div>
+          <Link
+            href="/customers?selectForLoan=true"
+            className="inline-flex items-center space-x-2 bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs px-5 py-3 rounded-xl shadow-md shadow-indigo-600/30 transition"
+          >
+            <Search className="w-4 h-4" />
+            <span>Search Borrower Master</span>
+            <ArrowRight className="w-4 h-4" />
+          </Link>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-6">
       {/* Header */}
@@ -174,34 +186,30 @@ function NewFinancingContent() {
         </Link>
         <div>
           <h1 className="text-2xl font-bold text-slate-900 tracking-tight">New Loan Application</h1>
-          <p className="text-xs text-slate-500">Originate an active financing facility tied to a borrower CIF master file</p>
+          <p className="text-xs text-slate-500">Originate financing facility for verified borrower</p>
         </div>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-        {/* Left Form: Borrower Search + Facility Parameters (5 cols) */}
+        {/* Left Form: Borrower Display (Locked) + Facility Parameters (5 cols) */}
         <div className="lg:col-span-5 space-y-5">
-          {/* STEP 1: Searchable Borrower Picker */}
+          {/* STEP 1: Borrower Profile (DISPLAY ONLY, CANNOT CHANGE) */}
           <div className="bg-white p-6 rounded-3xl border border-slate-200/90 shadow-2xs space-y-4">
             <div className="flex items-center justify-between pb-3 border-b border-slate-100">
               <div className="flex items-center space-x-2">
                 <span className="w-6 h-6 rounded-full bg-indigo-100 text-indigo-700 text-xs font-black flex items-center justify-center">1</span>
                 <h2 className="font-bold text-slate-900 text-sm uppercase tracking-wider">Borrower Profile</h2>
               </div>
-              {selectedCustomer && (
-                <button
-                  type="button"
-                  onClick={() => setSelectedCustomerId('')}
-                  className="text-xs font-bold text-indigo-600 hover:text-indigo-800 flex items-center space-x-1 cursor-pointer"
-                >
-                  <RotateCcw className="w-3.5 h-3.5" />
-                  <span>Change Borrower</span>
-                </button>
-              )}
+              <span className="text-[10px] font-bold text-slate-500 bg-slate-100 px-2.5 py-1 rounded-full flex items-center space-x-1">
+                <Lock className="w-3 h-3 text-slate-400" />
+                <span>Locked Profile</span>
+              </span>
             </div>
 
-            {selectedCustomer ? (
-              /* Selected Borrower Details Card */
+            {loadingCustomer ? (
+              <div className="text-center py-6 text-xs text-slate-400">Loading customer profile...</div>
+            ) : customer ? (
+              /* Display-Only Verified Borrower Card */
               <div className="bg-slate-50 rounded-2xl p-4 border border-slate-200 space-y-3">
                 <div className="flex items-start justify-between">
                   <div className="flex items-center space-x-3">
@@ -210,15 +218,15 @@ function NewFinancingContent() {
                     </div>
                     <div>
                       <div className="font-bold text-slate-900 text-sm">
-                        {selectedCustomer.title ? `${selectedCustomer.title}. ` : ''}{selectedCustomer.fullName}
+                        {customer.title ? `${customer.title}. ` : ''}{customer.fullName}
                       </div>
                       <div className="text-xs text-slate-500 font-mono">
-                        {selectedCustomer.idType}: {selectedCustomer.idNumber}
+                        {customer.idType}: {customer.idNumber}
                       </div>
                     </div>
                   </div>
                   <span className="text-[10px] bg-emerald-100 text-emerald-800 font-bold px-2 py-0.5 rounded-full">
-                    Selected
+                    Verified CIF
                   </span>
                 </div>
 
@@ -226,22 +234,27 @@ function NewFinancingContent() {
                   <div>
                     <span className="text-[10px] text-slate-400 block font-bold uppercase">Net Monthly Income</span>
                     <span className="font-bold text-slate-900">
-                      RM {selectedCustomer.monthlyNetIncome?.toLocaleString('en-MY') || '0.00'}
+                      RM {customer.monthlyNetIncome?.toLocaleString('en-MY', { minimumFractionDigits: 2 }) || '0.00'}
                     </span>
                   </div>
                   <div>
-                    <span className="text-[10px] text-slate-400 block font-bold uppercase">Current Commitments</span>
+                    <span className="text-[10px] text-slate-400 block font-bold uppercase">Existing Commitments</span>
                     <span className="font-bold text-slate-900">
-                      RM {selectedCustomer.monthlyCommitments?.toLocaleString('en-MY') || '0.00'}
+                      RM {customer.monthlyCommitments?.toLocaleString('en-MY', { minimumFractionDigits: 2 }) || '0.00'}
                     </span>
                   </div>
                 </div>
 
-                {/* Live Underwriting DSR Warning */}
+                <div className="text-xs text-slate-500 pt-1 flex items-center space-x-2">
+                  <CreditCard className="w-3.5 h-3.5 text-slate-400 shrink-0" />
+                  <span className="truncate">{customer.bankName} • {customer.bankAccountNo}</span>
+                </div>
+
+                {/* Live Underwriting DSR Indicator */}
                 <div className="pt-2 border-t border-slate-200/70">
                   <div className="flex items-center justify-between text-xs">
-                    <span className="text-slate-600 font-medium">New Projected DSR:</span>
-                    <span className={`px-2 py-0.5 rounded-full font-bold text-[11px] ${
+                    <span className="text-slate-600 font-medium">Projected Total DSR:</span>
+                    <span className={`px-2.5 py-0.5 rounded-full font-bold text-[11px] ${
                       projectedDsr <= 60
                         ? 'bg-emerald-100 text-emerald-800 border border-emerald-200'
                         : projectedDsr <= 75
@@ -255,66 +268,18 @@ function NewFinancingContent() {
                     (Existing RM {existingCommitments} + Proposed RM {proposedInstallment.toFixed(0)}) / RM {netIncome}
                   </div>
                 </div>
-              </div>
-            ) : (
-              /* Searchable Customer Picker */
-              <div className="space-y-3">
-                <div className="relative">
-                  <Search className="w-4 h-4 text-slate-400 absolute left-3 top-3" />
-                  <input
-                    type="text"
-                    placeholder="Search by name, IC / Passport, phone..."
-                    value={customerSearch}
-                    onChange={e => setCustomerSearch(e.target.value)}
-                    className="w-full text-xs pl-9 pr-3 py-2.5 rounded-xl border border-slate-200 bg-slate-50/50 focus:bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500 font-medium"
-                  />
+
+                {/* Change borrower link if needed */}
+                <div className="pt-1 text-right">
+                  <Link
+                    href="/customers?selectForLoan=true"
+                    className="text-[11px] text-slate-400 hover:text-indigo-600 transition underline"
+                  >
+                    Wrong customer? Select another
+                  </Link>
                 </div>
-
-                {loadingCustomers ? (
-                  <div className="text-center py-6 text-xs text-slate-400">Loading customer database...</div>
-                ) : filteredCustomers.length > 0 ? (
-                  <div className="space-y-2 max-h-60 overflow-y-auto">
-                    {filteredCustomers.map(c => (
-                      <div
-                        key={c.id}
-                        className="p-3 rounded-xl border border-slate-200 hover:border-indigo-300 hover:bg-indigo-50/30 transition flex items-center justify-between gap-3 text-xs"
-                      >
-                        <div className="min-w-0">
-                          <div className="font-bold text-slate-900 truncate">
-                            {c.title ? `${c.title}. ` : ''}{c.fullName}
-                          </div>
-                          <div className="text-slate-500 font-mono text-[11px]">
-                            {c.idType}: {c.idNumber} • {c.phone}
-                          </div>
-                          <div className="text-slate-600 text-[10px] mt-0.5">
-                            Net: RM {c.monthlyNetIncome?.toLocaleString('en-MY') || '0'} • Commitments: RM {c.monthlyCommitments?.toLocaleString('en-MY') || '0'}
-                          </div>
-                        </div>
-
-                        <button
-                          type="button"
-                          onClick={() => setSelectedCustomerId(c.id)}
-                          className="shrink-0 bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-[11px] px-3 py-1.5 rounded-lg shadow-2xs transition cursor-pointer"
-                        >
-                          Select Borrower
-                        </button>
-                      </div>
-                    ))}
-                  </div>
-                ) : (
-                  <div className="text-center py-5 bg-slate-50 rounded-2xl border border-slate-100 space-y-2">
-                    <p className="text-xs text-slate-500">No registered borrower found matching "{customerSearch}".</p>
-                    <Link
-                      href="/customers/new"
-                      className="inline-flex items-center space-x-1.5 text-xs font-bold text-indigo-600 hover:text-indigo-800"
-                    >
-                      <UserPlus className="w-3.5 h-3.5" />
-                      <span>Register New Borrower Profile</span>
-                    </Link>
-                  </div>
-                )}
               </div>
-            )}
+            ) : null}
           </div>
 
           {/* STEP 2: Loan Facility Parameters */}
@@ -438,16 +403,10 @@ function NewFinancingContent() {
 
               <button
                 type="submit"
-                disabled={submitting || !selectedCustomerId}
+                disabled={submitting || !customer}
                 className="w-full mt-3 bg-indigo-600 hover:bg-indigo-500 active:bg-indigo-700 text-white font-bold text-xs py-3 rounded-xl shadow-md shadow-indigo-600/30 transition flex items-center justify-center space-x-2 disabled:opacity-50 cursor-pointer"
               >
-                <span>
-                  {submitting
-                    ? 'Creating Loan Facility...'
-                    : !selectedCustomerId
-                    ? 'Select a Borrower Above to Proceed'
-                    : 'Submit Loan Application'}
-                </span>
+                <span>{submitting ? 'Creating Loan Facility...' : 'Submit Loan Application'}</span>
                 <ArrowRight className="w-4 h-4" />
               </button>
             </form>
