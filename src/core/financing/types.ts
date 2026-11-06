@@ -21,11 +21,12 @@ export type InstallmentStatus = 'UNPAID' | 'PARTIAL' | 'PAID';
 
 // Transaction Types
 export type TransactionType = 
-  | 'DISBURSEMENT' // Money released to borrower
-  | 'REPAYMENT'    // Borrower payment received
-  | 'LATE_FEE'     // Late penalty assessed
-  | 'SETTLEMENT'   // Final early payoff transaction
-  | 'FEE_CHARGE';  // Upfront processing fee, documentation, etc.
+  | 'DISBURSEMENT'       // Money released to borrower
+  | 'REPAYMENT'          // Borrower payment received
+  | 'LATE_FEE'           // Late penalty assessed
+  | 'SETTLEMENT'         // Final early payoff transaction
+  | 'FEE_CHARGE'         // Upfront processing fee, documentation, etc.
+  | 'INSTALLMENT_BILLED';// Scheduled installment due
 
 /**
  * Input parameters required to calculate a new financing facility

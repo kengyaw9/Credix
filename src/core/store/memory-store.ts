@@ -103,7 +103,7 @@ export interface FinancingTransaction {
   id: string;
   tenantId: string;
   financingId: string;
-  txType: 'DISBURSEMENT' | 'REPAYMENT' | 'LATE_FEE' | 'SETTLEMENT';
+  txType: 'DISBURSEMENT' | 'FEE_CHARGE' | 'INSTALLMENT_BILLED' | 'REPAYMENT' | 'LATE_FEE' | 'SETTLEMENT';
   amount: number;
   allocatedLateFee: number;
   allocatedProfit: number;
@@ -423,6 +423,134 @@ class MultiTenantDatabase {
       schedule: metroSchedule,
       createdAt: '2026-02-01T09:30:00Z',
     });
+
+    // Seed comprehensive ledger history for Ahmad's facility (acc-101)
+    this.transactions.push(
+      {
+        id: 'tx-101-1',
+        tenantId: '11111111-1111-1111-1111-111111111111',
+        financingId: 'acc-101',
+        txType: 'FEE_CHARGE',
+        amount: 150.00,
+        allocatedLateFee: 0,
+        allocatedProfit: 0,
+        allocatedPrincipal: 0,
+        excessAmount: 0,
+        paymentMethod: 'DEDUCTION',
+        referenceNo: 'FEE-PROC-88912',
+        remarks: 'Documentation & Loan Processing Fee (Deducted upfront)',
+        transactedAt: '2026-01-01T08:50:00Z',
+      },
+      {
+        id: 'tx-101-2',
+        tenantId: '11111111-1111-1111-1111-111111111111',
+        financingId: 'acc-101',
+        txType: 'FEE_CHARGE',
+        amount: 50.00,
+        allocatedLateFee: 0,
+        allocatedProfit: 0,
+        allocatedPrincipal: 0,
+        excessAmount: 0,
+        paymentMethod: 'DEDUCTION',
+        referenceNo: 'FEE-STAMP-88912',
+        remarks: 'Inland Revenue Board Stamp Duty (Deducted upfront)',
+        transactedAt: '2026-01-01T08:52:00Z',
+      },
+      {
+        id: 'tx-101-3',
+        tenantId: '11111111-1111-1111-1111-111111111111',
+        financingId: 'acc-101',
+        txType: 'DISBURSEMENT',
+        amount: 4800.00,
+        allocatedLateFee: 0,
+        allocatedProfit: 0,
+        allocatedPrincipal: 4800.00,
+        excessAmount: 0,
+        paymentMethod: 'BANK_TRANSFER',
+        referenceNo: 'TRF-APX-88912',
+        remarks: 'Net Loan Capital Drawdown disbursed to Maybank 114012345678 (Gross RM 5,000 minus RM 200 fees)',
+        transactedAt: '2026-01-01T09:00:00Z',
+      },
+      {
+        id: 'tx-101-4',
+        tenantId: '11111111-1111-1111-1111-111111111111',
+        financingId: 'acc-101',
+        txType: 'REPAYMENT',
+        amount: 916.67,
+        allocatedLateFee: 0,
+        allocatedProfit: 83.34,
+        allocatedPrincipal: 833.33,
+        excessAmount: 0,
+        paymentMethod: 'FPX_ONLINE',
+        referenceNo: 'FPX-20260206-8812',
+        remarks: 'Installment #1 Repayment via JomPay FPX (Principal: RM 833.33, Profit: RM 83.34)',
+        transactedAt: '2026-02-06T14:32:00Z',
+      }
+    );
+
+    // Seed ledger history for Metro Micro facility (acc-201)
+    this.transactions.push(
+      {
+        id: 'tx-201-1',
+        tenantId: '22222222-2222-2222-2222-222222222222',
+        financingId: 'acc-201',
+        txType: 'FEE_CHARGE',
+        amount: 200.00,
+        allocatedLateFee: 0,
+        allocatedProfit: 0,
+        allocatedPrincipal: 0,
+        excessAmount: 0,
+        paymentMethod: 'DEDUCTION',
+        referenceNo: 'FEE-MM-4401',
+        remarks: 'Documentation Processing Fee (Deducted upfront)',
+        transactedAt: '2026-02-01T09:50:00Z',
+      },
+      {
+        id: 'tx-201-2',
+        tenantId: '22222222-2222-2222-2222-222222222222',
+        financingId: 'acc-201',
+        txType: 'FEE_CHARGE',
+        amount: 50.00,
+        allocatedLateFee: 0,
+        allocatedProfit: 0,
+        allocatedPrincipal: 0,
+        excessAmount: 0,
+        paymentMethod: 'DEDUCTION',
+        referenceNo: 'FEE-STAMP-4401',
+        remarks: 'Stamp Duty Fee',
+        transactedAt: '2026-02-01T09:55:00Z',
+      },
+      {
+        id: 'tx-201-3',
+        tenantId: '22222222-2222-2222-2222-222222222222',
+        financingId: 'acc-201',
+        txType: 'DISBURSEMENT',
+        amount: 9750.00,
+        allocatedLateFee: 0,
+        allocatedProfit: 0,
+        allocatedPrincipal: 9750.00,
+        excessAmount: 0,
+        paymentMethod: 'BANK_TRANSFER',
+        referenceNo: 'TRF-MM-4401',
+        remarks: 'Disbursed Net RM 9,750 (Gross RM 10,000 minus RM 250 fees)',
+        transactedAt: '2026-02-01T10:00:00Z',
+      },
+      {
+        id: 'tx-201-4',
+        tenantId: '22222222-2222-2222-2222-222222222222',
+        financingId: 'acc-201',
+        txType: 'REPAYMENT',
+        amount: 1100.00,
+        allocatedLateFee: 0,
+        allocatedProfit: 100.00,
+        allocatedPrincipal: 1000.00,
+        excessAmount: 0,
+        paymentMethod: 'BANK_TRANSFER',
+        referenceNo: 'PAY-MM-001',
+        remarks: 'Installment #1 Repayment (Principal: RM 1,000.00, Profit: RM 100.00)',
+        transactedAt: '2026-03-01T10:00:00Z',
+      }
+    );
   }
 
   // Strict Tenant Isolated Operations

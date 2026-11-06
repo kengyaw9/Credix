@@ -6,7 +6,7 @@ import DashboardLayout from '@/components/layout/DashboardLayout';
 import { 
   ArrowLeft, CreditCard, User, AlertTriangle, CheckCircle2, 
   Clock, DollarSign, Calendar, ArrowUpRight, Receipt, FileText,
-  ShieldCheck, Banknote, Percent, TrendingUp
+  ShieldCheck, Banknote, Percent, TrendingUp, History, ListOrdered, Tag, ArrowDownRight, Layers
 } from 'lucide-react';
 import { Customer, FinancingAccount, FinancingTransaction } from '@/core/store/memory-store';
 import { RealTimeAccountStatus, ScheduleItem, SettlementQuotation } from '@/core/financing/types';
@@ -27,6 +27,10 @@ export default function FinancingDetailPage({ params }: { params: Promise<{ id: 
   const [paymentAmount, setPaymentAmount] = useState('');
   const [paymentDate, setPaymentDate] = useState(new Date().toISOString().split('T')[0]);
   const [paymentMsg, setPaymentMsg] = useState<string | null>(null);
+
+  // Tab & Filter States
+  const [activeTab, setActiveTab] = useState<'SCHEDULE' | 'HISTORY'>('SCHEDULE');
+  const [txFilter, setTxFilter] = useState<'ALL' | 'DISBURSEMENT' | 'REPAYMENT' | 'FEE_CHARGE'>('ALL');
 
   // Settlement Modal
   const [isSettleOpen, setIsSettleOpen] = useState(false);
@@ -309,94 +313,280 @@ export default function FinancingDetailPage({ params }: { params: Promise<{ id: 
           </div>
         </div>
 
-        {/* Amortization Schedule Table */}
-        <div className="bg-white rounded-3xl border border-slate-200/90 shadow-2xs overflow-hidden">
-          <div className="p-5 border-b border-slate-100 flex justify-between items-center bg-slate-50/50">
-            <div>
-              <h2 className="font-bold text-slate-900 text-base">Amortization Schedule</h2>
-              <p className="text-xs text-slate-500">Month-by-month installment breakdown and payment allocation</p>
-            </div>
-            <span className="text-xs text-slate-500 font-mono">
-              {paidCount} / {account.schedule.length} Paid
-            </span>
+        {/* Tab Switcher: Repayment Schedule vs. Financial History & Ledger */}
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-200 pb-2">
+          <div className="flex items-center space-x-2">
+            <button
+              onClick={() => setActiveTab('SCHEDULE')}
+              className={`flex items-center space-x-2 px-4 py-2.5 rounded-xl text-xs font-bold transition cursor-pointer ${
+                activeTab === 'SCHEDULE'
+                  ? 'bg-indigo-600 text-white shadow-md shadow-indigo-600/20'
+                  : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
+              }`}
+            >
+              <ListOrdered className="w-4 h-4" />
+              <span>Repayment Schedule</span>
+              <span className={`text-[10px] px-2 py-0.5 rounded-full font-mono ${
+                activeTab === 'SCHEDULE' ? 'bg-indigo-500 text-white' : 'bg-slate-200 text-slate-700'
+              }`}>
+                {paidCount}/{account.schedule.length} Paid
+              </span>
+            </button>
+
+            <button
+              onClick={() => setActiveTab('HISTORY')}
+              className={`flex items-center space-x-2 px-4 py-2.5 rounded-xl text-xs font-bold transition cursor-pointer ${
+                activeTab === 'HISTORY'
+                  ? 'bg-indigo-600 text-white shadow-md shadow-indigo-600/20'
+                  : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
+              }`}
+            >
+              <History className="w-4 h-4" />
+              <span>Financial Ledger &amp; History</span>
+              <span className={`text-[10px] px-2 py-0.5 rounded-full font-mono ${
+                activeTab === 'HISTORY' ? 'bg-indigo-500 text-white' : 'bg-slate-200 text-slate-700'
+              }`}>
+                {account.transactions.length} Records
+              </span>
+            </button>
           </div>
 
-          <div className="overflow-x-auto">
-            <table className="w-full text-left border-collapse text-xs">
-              <thead className="bg-slate-50 text-slate-500 uppercase font-bold border-b border-slate-100">
-                <tr>
-                  <th className="p-3.5">#</th>
-                  <th className="p-3.5">Due Date</th>
-                  <th className="p-3.5">Principal Due</th>
-                  <th className="p-3.5">Profit Due</th>
-                  <th className="p-3.5">Total Installment</th>
-                  <th className="p-3.5">Principal Paid</th>
-                  <th className="p-3.5">Profit Paid</th>
-                  <th className="p-3.5">Ending Balance</th>
-                  <th className="p-3.5 text-center">Status</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-slate-100">
-                {account.schedule.map(item => (
-                  <tr key={item.installmentNo} className="hover:bg-slate-50/70 transition">
-                    <td className="p-3.5 font-bold text-slate-400">{item.installmentNo}</td>
-                    <td className="p-3.5 font-semibold text-slate-800">{item.dueDate}</td>
-                    <td className="p-3.5 text-slate-700">RM {item.principalDue.toFixed(2)}</td>
-                    <td className="p-3.5 text-indigo-600 font-semibold">RM {item.profitDue.toFixed(2)}</td>
-                    <td className="p-3.5 font-bold text-slate-900">RM {item.totalDue.toFixed(2)}</td>
-                    <td className="p-3.5 text-emerald-700 font-semibold">RM {item.principalPaid.toFixed(2)}</td>
-                    <td className="p-3.5 text-emerald-700 font-semibold">RM {item.profitPaid.toFixed(2)}</td>
-                    <td className="p-3.5 text-slate-500">RM {item.endingBalance.toFixed(2)}</td>
-                    <td className="p-3.5 text-center">
-                      <span className={`inline-flex px-2.5 py-0.5 rounded-full text-[10px] font-bold ${
-                        item.status === 'PAID'
-                          ? 'bg-emerald-50 text-emerald-700 border border-emerald-200'
-                          : item.status === 'PARTIAL'
-                          ? 'bg-amber-50 text-amber-700 border border-amber-200'
-                          : 'bg-slate-100 text-slate-600'
-                      }`}>
-                        {item.status}
-                      </span>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        </div>
-
-        {/* Transaction History Audit Trail */}
-        <div className="bg-white rounded-3xl border border-slate-200/90 shadow-2xs overflow-hidden">
-          <div className="p-5 border-b border-slate-100 bg-slate-50/50">
-            <h2 className="font-bold text-slate-900 text-base">Transaction Audit Trail</h2>
-            <p className="text-xs text-slate-500">Chronological history of disbursements, repayments, and settlements</p>
-          </div>
-
-          {account.transactions.length === 0 ? (
-            <div className="p-12 text-center text-slate-400 text-xs">No transactions recorded yet.</div>
-          ) : (
-            <div className="divide-y divide-slate-100 text-xs">
-              {account.transactions.map(tx => (
-                <div key={tx.id} className="p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-2 hover:bg-slate-50">
-                  <div className="space-y-0.5">
-                    <div className="flex items-center space-x-2">
-                      <span className="font-bold text-slate-900">{tx.txType}</span>
-                      <span className="text-slate-400 font-mono">Ref: {tx.referenceNo}</span>
-                      <span className="bg-slate-100 text-slate-600 px-2 py-0.5 rounded font-mono">{tx.paymentMethod}</span>
-                    </div>
-                    <div className="text-slate-500">{tx.remarks}</div>
-                    <div className="text-slate-400 text-[11px]">{new Date(tx.transactedAt).toLocaleString()}</div>
-                  </div>
-                  <div className="text-right">
-                    <span className="text-sm font-bold text-slate-900">
-                      RM {tx.amount.toLocaleString('en-MY', { minimumFractionDigits: 2 })}
-                    </span>
-                  </div>
-                </div>
+          {activeTab === 'HISTORY' && (
+            <div className="flex items-center space-x-1.5 text-xs">
+              <span className="text-[11px] font-bold text-slate-400 mr-1 uppercase">Filter:</span>
+              {(['ALL', 'DISBURSEMENT', 'REPAYMENT', 'FEE_CHARGE'] as const).map(f => (
+                <button
+                  key={f}
+                  onClick={() => setTxFilter(f)}
+                  className={`text-[11px] font-bold px-2.5 py-1 rounded-lg border transition cursor-pointer ${
+                    txFilter === f
+                      ? 'bg-slate-900 border-slate-900 text-white'
+                      : 'border-slate-200 bg-white text-slate-600 hover:bg-slate-50'
+                  }`}
+                >
+                  {f === 'ALL' ? 'All Events' : f === 'FEE_CHARGE' ? 'Fees & Charges' : f.charAt(0) + f.slice(1).toLowerCase() + 's'}
+                </button>
               ))}
             </div>
           )}
         </div>
+
+        {/* TAB 1: Repayment Schedule */}
+        {activeTab === 'SCHEDULE' && (
+          <div className="bg-white rounded-3xl border border-slate-200/90 shadow-2xs overflow-hidden">
+            <div className="p-5 border-b border-slate-100 flex justify-between items-center bg-slate-50/50">
+              <div>
+                <h2 className="font-bold text-slate-900 text-base">Amortization Schedule</h2>
+                <p className="text-xs text-slate-500">Month-by-month installment breakdown and payment allocation</p>
+              </div>
+              <span className="text-xs text-slate-500 font-mono font-bold">
+                {paidCount} / {account.schedule.length} Paid
+              </span>
+            </div>
+
+            <div className="overflow-x-auto">
+              <table className="w-full text-left border-collapse text-xs">
+                <thead className="bg-slate-50 text-slate-500 uppercase font-bold border-b border-slate-100">
+                  <tr>
+                    <th className="p-3.5">#</th>
+                    <th className="p-3.5">Due Date</th>
+                    <th className="p-3.5">Principal Due</th>
+                    <th className="p-3.5">Profit Due</th>
+                    <th className="p-3.5">Total Installment</th>
+                    <th className="p-3.5">Principal Paid</th>
+                    <th className="p-3.5">Profit Paid</th>
+                    <th className="p-3.5">Ending Balance</th>
+                    <th className="p-3.5 text-center">Status</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-100 font-medium">
+                  {account.schedule.map(item => (
+                    <tr key={item.installmentNo} className="hover:bg-slate-50/70 transition">
+                      <td className="p-3.5 font-bold text-slate-400">{item.installmentNo}</td>
+                      <td className="p-3.5 font-semibold text-slate-800 font-mono">{item.dueDate}</td>
+                      <td className="p-3.5 text-slate-700 font-mono">RM {item.principalDue.toFixed(2)}</td>
+                      <td className="p-3.5 text-indigo-600 font-semibold font-mono">RM {item.profitDue.toFixed(2)}</td>
+                      <td className="p-3.5 font-bold text-slate-900 font-mono">RM {item.totalDue.toFixed(2)}</td>
+                      <td className="p-3.5 text-emerald-700 font-semibold font-mono">RM {item.principalPaid.toFixed(2)}</td>
+                      <td className="p-3.5 text-emerald-700 font-semibold font-mono">RM {item.profitPaid.toFixed(2)}</td>
+                      <td className="p-3.5 text-slate-500 font-mono">RM {item.endingBalance.toFixed(2)}</td>
+                      <td className="p-3.5 text-center">
+                        <span className={`inline-flex px-2.5 py-0.5 rounded-full text-[10px] font-bold ${
+                          item.status === 'PAID'
+                            ? 'bg-emerald-50 text-emerald-700 border border-emerald-200'
+                            : item.status === 'PARTIAL'
+                            ? 'bg-amber-50 text-amber-700 border border-amber-200'
+                            : 'bg-slate-100 text-slate-600'
+                        }`}>
+                          {item.status}
+                        </span>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        )}
+
+        {/* TAB 2: Financial Ledger & Transaction History */}
+        {activeTab === 'HISTORY' && (
+          <div className="space-y-4">
+            {/* Quick Financial Position Summary Cards */}
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+              <div className="bg-white p-4 rounded-2xl border border-slate-200/90 shadow-2xs">
+                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Disbursed Payout</span>
+                <div className="text-lg font-extrabold text-indigo-600 mt-1">
+                  RM {(account.disbursedAmount || account.principalAmount - account.processingFee - account.stampDutyFee).toLocaleString('en-MY', { minimumFractionDigits: 2 })}
+                </div>
+                <span className="text-[10px] text-slate-400 block mt-0.5">Net capital released</span>
+              </div>
+
+              <div className="bg-white p-4 rounded-2xl border border-slate-200/90 shadow-2xs">
+                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Total Repaid</span>
+                <div className="text-lg font-extrabold text-emerald-600 mt-1">
+                  RM {account.transactions.filter(t => t.txType === 'REPAYMENT').reduce((sum, t) => sum + t.amount, 0).toLocaleString('en-MY', { minimumFractionDigits: 2 })}
+                </div>
+                <span className="text-[10px] text-slate-400 block mt-0.5">Collections received</span>
+              </div>
+
+              <div className="bg-white p-4 rounded-2xl border border-slate-200/90 shadow-2xs">
+                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Fees &amp; Charges</span>
+                <div className="text-lg font-extrabold text-amber-600 mt-1">
+                  RM {((account.processingFee || 0) + (account.stampDutyFee || 0)).toLocaleString('en-MY', { minimumFractionDigits: 2 })}
+                </div>
+                <span className="text-[10px] text-slate-400 block mt-0.5">Proc Fee &amp; Stamp Duty</span>
+              </div>
+
+              <div className="bg-white p-4 rounded-2xl border border-slate-200/90 shadow-2xs">
+                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Remaining Principal</span>
+                <div className="text-lg font-extrabold text-slate-900 mt-1">
+                  RM {(rt?.totalOutstandingBalance ?? 0).toLocaleString('en-MY', { minimumFractionDigits: 2 })}
+                </div>
+                <span className="text-[10px] text-slate-400 block mt-0.5">Active ledger balance</span>
+              </div>
+            </div>
+
+            {/* Detailed Transaction Ledger Table */}
+            <div className="bg-white rounded-3xl border border-slate-200/90 shadow-2xs overflow-hidden">
+              <div className="p-5 border-b border-slate-100 flex justify-between items-center bg-slate-50/50">
+                <div>
+                  <h2 className="font-bold text-slate-900 text-base">Account Transaction Ledger</h2>
+                  <p className="text-xs text-slate-500">Auditable statement of money disbursement, fee deductions, and collection waterfalls</p>
+                </div>
+                <span className="text-xs text-slate-500 font-mono font-bold">
+                  {account.transactions.length} Total Events
+                </span>
+              </div>
+
+              {account.transactions.length === 0 ? (
+                <div className="p-16 text-center text-slate-400 text-xs">No transactions recorded for this account.</div>
+              ) : (
+                <div className="divide-y divide-slate-100">
+                  {account.transactions
+                    .filter(tx => {
+                      if (txFilter === 'ALL') return true;
+                      if (txFilter === 'DISBURSEMENT') return tx.txType === 'DISBURSEMENT';
+                      if (txFilter === 'REPAYMENT') return tx.txType === 'REPAYMENT';
+                      if (txFilter === 'FEE_CHARGE') return tx.txType === 'FEE_CHARGE';
+                      return true;
+                    })
+                    .map(tx => {
+                      const isRepayment = tx.txType === 'REPAYMENT';
+                      const isDisbursement = tx.txType === 'DISBURSEMENT';
+                      const isFee = tx.txType === 'FEE_CHARGE';
+                      const isSettlement = tx.txType === 'SETTLEMENT';
+                      const isLate = tx.txType === 'LATE_FEE';
+
+                      return (
+                        <div key={tx.id} className="p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4 hover:bg-slate-50/60 transition">
+                          <div className="space-y-1.5 min-w-0">
+                            {/* Badges line */}
+                            <div className="flex flex-wrap items-center gap-2">
+                              <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-bold ${
+                                isRepayment
+                                  ? 'bg-emerald-100 text-emerald-800 border border-emerald-200'
+                                  : isDisbursement
+                                  ? 'bg-indigo-100 text-indigo-800 border border-indigo-200'
+                                  : isFee
+                                  ? 'bg-amber-100 text-amber-800 border border-amber-200'
+                                  : isSettlement
+                                  ? 'bg-purple-100 text-purple-800 border border-purple-200'
+                                  : 'bg-rose-100 text-rose-800 border border-rose-200'
+                              }`}>
+                                {isRepayment && <CheckCircle2 className="w-3 h-3 mr-1" />}
+                                {isDisbursement && <ArrowUpRight className="w-3 h-3 mr-1" />}
+                                {isFee && <Tag className="w-3 h-3 mr-1" />}
+                                {isSettlement && <Receipt className="w-3 h-3 mr-1" />}
+                                {isLate && <AlertTriangle className="w-3 h-3 mr-1" />}
+                                {tx.txType.replace('_', ' ')}
+                              </span>
+
+                              <span className="text-xs text-slate-500 font-mono font-semibold">
+                                Ref: {tx.referenceNo}
+                              </span>
+
+                              <span className="bg-slate-100 text-slate-600 px-2 py-0.5 rounded text-[11px] font-mono">
+                                {tx.paymentMethod}
+                              </span>
+
+                              <span className="text-[11px] text-slate-400 font-medium">
+                                {new Date(tx.transactedAt).toLocaleString()}
+                              </span>
+                            </div>
+
+                            {/* Particulars */}
+                            <div className="text-xs font-semibold text-slate-800">
+                              {tx.remarks || 'Financial transaction executed'}
+                            </div>
+
+                            {/* Waterfall Breakdown for Repayments */}
+                            {isRepayment && (
+                              <div className="flex flex-wrap gap-x-3 gap-y-1 text-[11px] pt-1">
+                                <span className="text-slate-500">
+                                  Principal Allocated: <strong className="text-slate-900 font-mono">RM {tx.allocatedPrincipal.toFixed(2)}</strong>
+                                </span>
+                                <span className="text-slate-400">•</span>
+                                <span className="text-slate-500">
+                                  Profit Allocated: <strong className="text-indigo-600 font-mono">RM {tx.allocatedProfit.toFixed(2)}</strong>
+                                </span>
+                                {tx.allocatedLateFee > 0 && (
+                                  <>
+                                    <span className="text-slate-400">•</span>
+                                    <span className="text-rose-600 font-bold">
+                                      Late Penalty Paid: <strong className="font-mono">RM {tx.allocatedLateFee.toFixed(2)}</strong>
+                                    </span>
+                                  </>
+                                )}
+                              </div>
+                            )}
+                          </div>
+
+                          {/* Right Amount display */}
+                          <div className="text-right shrink-0">
+                            <div className={`text-base font-black font-mono ${
+                              isRepayment
+                                ? 'text-emerald-600'
+                                : isDisbursement
+                                ? 'text-indigo-600'
+                                : isFee
+                                ? 'text-amber-600'
+                                : 'text-slate-900'
+                            }`}>
+                              {isRepayment ? '+' : ''}RM {tx.amount.toLocaleString('en-MY', { minimumFractionDigits: 2 })}
+                            </div>
+                            <span className="text-[10px] text-slate-400 font-medium block">
+                              {isRepayment ? 'Credit (Repayment)' : isDisbursement ? 'Capital Payout' : 'Upfront Fee'}
+                            </span>
+                          </div>
+                        </div>
+                      );
+                    })}
+                </div>
+              )}
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Repayment Modal */}
