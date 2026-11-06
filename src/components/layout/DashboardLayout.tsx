@@ -95,7 +95,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                 <Building2 className="w-5 h-5" />
               </div>
               <div>
-                <div className="text-base font-extrabold text-white tracking-tight leading-none">FlexiFinancing</div>
+                <div className="text-base font-extrabold text-white tracking-tight leading-none">Credix</div>
                 <div className="text-[10px] text-indigo-400 font-bold uppercase tracking-widest mt-1">Lending Core SaaS</div>
               </div>
             </div>

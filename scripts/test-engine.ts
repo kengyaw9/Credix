@@ -6,7 +6,7 @@ import {
 } from '../src/core/financing';
 
 console.log('====================================================');
-console.log('   FLEXIFINANCING ZERO-BATCH CALCULATION ENGINE     ');
+console.log('      CREDIX ZERO-BATCH CALCULATION ENGINE          ');
 console.log('====================================================\n');
 
 // 1. Test Loan Computation (Flat Rate)

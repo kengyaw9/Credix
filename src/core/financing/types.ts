@@ -1,5 +1,5 @@
 /**
- * FlexiFinancing Core Domain Types
+ * Credix Core Domain Types
  * 
  * Written for maximum readability and straightforward business logic.
  * No cryptic banking acronyms. Everything has a plain English definition.

@@ -2,8 +2,8 @@ import type { Metadata } from 'next';
 import './globals.css';
 
 export const metadata: Metadata = {
-  title: 'FlexiFinancing - Multi-Tenant Cloud Lending Platform',
-  description: 'Zero-batch multi-tenant financing and loan management system for small financial institutions',
+  title: 'Credix - Cloud Lending Core SaaS',
+  description: 'Next-generation zero-batch multi-tenant financing and loan management system for small financial institutions',
 };
 
 export default function RootLayout({

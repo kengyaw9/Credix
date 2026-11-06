@@ -1,5 +1,5 @@
 -- =============================================================================
--- FlexiFinancing: Multi-Tenant Cloud Database Schema with Row-Level Security (RLS)
+-- Credix: Multi-Tenant Cloud Database Schema with Row-Level Security (RLS)
 -- Designed for PostgreSQL (AWS RDS / GCP Cloud SQL / Supabase / Neon)
 -- =============================================================================
 

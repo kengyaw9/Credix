@@ -60,7 +60,7 @@ export default function LoginPage() {
           <div className="inline-flex p-3 rounded-2xl bg-gradient-to-br from-indigo-500 to-indigo-700 text-white shadow-xl shadow-indigo-500/25 border border-indigo-400/20">
             <Building2 className="w-8 h-8" />
           </div>
-          <h1 className="text-2xl font-extrabold text-white tracking-tight">FlexiFinancing</h1>
+          <h1 className="text-2xl font-extrabold text-white tracking-tight">Credix</h1>
           <p className="text-xs text-slate-400 max-w-sm mx-auto">
             Cloud Multi-Tenant Lending Core • Real-Time Zero-Batch Architecture
           </p>

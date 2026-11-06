@@ -1,8 +1,8 @@
-# FlexiFinancing: Cloud Multi-Tenant Lending Platform
+# Credix: Cloud Multi-Tenant Lending Platform
 
 A modern, cloud-native Lending & Financing SaaS designed specifically for small financial institutions (micro-lenders, credit companies, cooperatives, and SME financiers).
 
-Unlike legacy core banking platforms that rely on cumbersome overnight batch runs, **FlexiFinancing operates completely batch-free** with dynamic, on-demand real-time calculations.
+Unlike legacy core banking platforms that rely on cumbersome overnight batch runs, **Credix operates completely batch-free** with dynamic, on-demand real-time calculations.
 
 ---
 
@@ -10,7 +10,7 @@ Unlike legacy core banking platforms that rely on cumbersome overnight batch run
 
 ### 1. Zero Nightly Batch Run
 * **Traditional Core Banking**: A midnight batch job runs for hours to calculate daily interest accrual, flip overdue status flags, assess late payment fees, and update ledger balances.
-* **FlexiFinancing Approach**:
+* **Credix Approach**:
   * **Dynamic Status Evaluation**: Delinquency state and Days Past Due (DPD) are computed dynamically at query time (`CURRENT_DATE > due_date AND paid < due`).
   * **On-the-Fly Late Charges**: Penalty/late charges are calculated on-demand whenever an account is viewed, quoted, or paid.
   * **Zero Latency**: Officers and borrowers always see the real-time financial state without waiting for midnight.
@@ -38,7 +38,7 @@ The complex banking overhead (BNM reporting, CCRIS/CTOS, AMLA screening, branch 
 ## Project Structure (Written for Maximum Readability)
 
 ```
-FlexiFinancing/
+Credix/
 ├── src/
 │   ├── core/
 │   │   ├── financing/
