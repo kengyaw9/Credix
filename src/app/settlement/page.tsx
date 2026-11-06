@@ -3,7 +3,7 @@
 import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
 import DashboardLayout from '@/components/layout/DashboardLayout';
-import { DollarSign, ArrowRight, ShieldCheck, CheckCircle2 } from 'lucide-react';
+import { DollarSign, ArrowLeft, ShieldCheck, CheckCircle2 } from 'lucide-react';
 import { FinancingAccount } from '@/core/store/memory-store';
 import { SettlementQuotation } from '@/core/financing/types';
 
@@ -83,23 +83,28 @@ export default function SettlementPage() {
   return (
     <DashboardLayout>
       <div className="max-w-3xl mx-auto space-y-6">
-        {/* Header */}
-        <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm space-y-1">
-          <div className="flex items-center space-x-2 text-indigo-600">
-            <DollarSign className="w-5 h-5" />
-            <span className="text-xs font-bold uppercase tracking-wider">Islamic &amp; Conventional Loan Servicing</span>
+        {/* Back to Dashboard Button & Header */}
+        <div className="flex items-center space-x-3">
+          <Link
+            href="/"
+            className="inline-flex items-center space-x-1.5 px-3 py-2 bg-white hover:bg-slate-100 text-slate-700 text-xs font-bold rounded-xl border border-slate-200/90 transition shadow-2xs"
+          >
+            <ArrowLeft className="w-4 h-4" />
+            <span>Back to Dashboard</span>
+          </Link>
+          <div>
+            <h1 className="text-2xl font-bold text-slate-900 tracking-tight">Early Settlement &amp; Rebate</h1>
+            <p className="text-xs text-slate-500">
+              Real-time unearned profit discount (*Ibra&apos;*) and final payoff quotation
+            </p>
           </div>
-          <h1 className="text-2xl font-bold text-slate-900 tracking-tight">Early Settlement &amp; Rebate (Ibra&apos;) Engine</h1>
-          <p className="text-xs text-slate-500">
-            Calculates real-time unearned profit rebate and exact payoff quotations without waiting for batch runs.
-          </p>
         </div>
 
         {/* Calculation Box */}
-        <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-6 space-y-5">
+        <div className="bg-white rounded-3xl border border-slate-200/90 shadow-2xs p-6 space-y-5">
           <div className="space-y-4">
             <div>
-              <label className="block text-xs font-semibold text-slate-700 mb-1">Select Active Financing Facility</label>
+              <label className="block text-xs font-bold text-slate-700 mb-1.5">Select Active Financing Facility</label>
               {accounts.length === 0 ? (
                 <div className="text-xs text-slate-400 p-3 bg-slate-50 rounded-xl">
                   No active financing facilities currently open for early settlement.
@@ -111,7 +116,7 @@ export default function SettlementPage() {
                     setSelectedAccountId(e.target.value);
                     setQuote(null);
                   }}
-                  className="w-full text-sm p-2.5 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                  className="w-full text-sm p-3 rounded-xl border border-slate-200 bg-slate-50/50 focus:bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500 font-semibold"
                 >
                   {accounts.map(a => (
                     <option key={a.id} value={a.id}>
@@ -123,7 +128,7 @@ export default function SettlementPage() {
             </div>
 
             <div>
-              <label className="block text-xs font-semibold text-slate-700 mb-1">Settlement Payoff Date</label>
+              <label className="block text-xs font-bold text-slate-700 mb-1.5">Settlement Payoff Date</label>
               <input
                 type="date"
                 value={settleDate}
@@ -131,7 +136,7 @@ export default function SettlementPage() {
                   setSettleDate(e.target.value);
                   setQuote(null);
                 }}
-                className="w-full text-sm p-2.5 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                className="w-full text-sm p-2.5 rounded-xl border border-slate-200 bg-slate-50/50 focus:bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
               />
             </div>
 
@@ -139,7 +144,7 @@ export default function SettlementPage() {
               type="button"
               disabled={loading || accounts.length === 0}
               onClick={handleComputeQuote}
-              className="w-full bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs py-3 rounded-xl transition shadow-sm disabled:opacity-50"
+              className="w-full bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs py-3 rounded-xl transition shadow-sm disabled:opacity-50 cursor-pointer"
             >
               {loading ? 'Computing Rebate...' : 'Generate Real-Time Settlement Quotation'}
             </button>
@@ -187,7 +192,7 @@ export default function SettlementPage() {
                 <button
                   type="button"
                   onClick={handleExecuteSettlement}
-                  className="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs py-3 rounded-xl shadow-sm transition"
+                  className="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs py-3 rounded-xl shadow-sm transition cursor-pointer"
                 >
                   Accept Payment &amp; Discharge Facility
                 </button>

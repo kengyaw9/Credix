@@ -3,7 +3,7 @@
 import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
 import DashboardLayout from '@/components/layout/DashboardLayout';
-import { Users, PlusCircle, Search, ChevronRight, Phone, Mail, CreditCard } from 'lucide-react';
+import { Users, PlusCircle, Search, ChevronRight, Phone, Mail, CreditCard, ArrowLeft } from 'lucide-react';
 import { Customer } from '@/core/store/memory-store';
 
 export default function CustomersListPage() {
@@ -29,14 +29,22 @@ export default function CustomersListPage() {
   return (
     <DashboardLayout>
       <div className="space-y-6">
-        {/* Header */}
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
-          <div>
-            <h1 className="text-2xl font-bold text-slate-900 tracking-tight">Borrower Directory (CIF)</h1>
-            <p className="text-sm text-slate-500 mt-1">
-              Customer Information File (CIF Lite) master profiles for your institute.
-            </p>
+        {/* Back to Dashboard Button & Header */}
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white p-6 rounded-3xl border border-slate-200/90 shadow-2xs">
+          <div className="flex items-center space-x-3">
+            <Link
+              href="/"
+              className="inline-flex items-center space-x-1.5 px-3 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold rounded-xl transition"
+            >
+              <ArrowLeft className="w-4 h-4" />
+              <span>Back to Dashboard</span>
+            </Link>
+            <div>
+              <h1 className="text-2xl font-bold text-slate-900 tracking-tight">Borrower Directory (CIF)</h1>
+              <p className="text-xs text-slate-500">Customer Information File (CIF Lite) master profiles</p>
+            </div>
           </div>
+
           <Link
             href="/customers/new"
             className="inline-flex items-center space-x-2 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold px-4 py-2.5 rounded-xl shadow-sm transition"
@@ -59,9 +67,9 @@ export default function CustomersListPage() {
         </div>
 
         {/* Customers Table */}
-        <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+        <div className="bg-white rounded-3xl border border-slate-200 shadow-2xs overflow-hidden">
           {loading ? (
-            <div className="p-12 text-center text-slate-500">Loading borrowers...</div>
+            <div className="p-12 text-center text-slate-400">Loading borrowers...</div>
           ) : filtered.length === 0 ? (
             <div className="p-12 text-center text-slate-500 space-y-3">
               <p>No borrower profiles found.</p>
