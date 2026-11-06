@@ -204,8 +204,12 @@ export default function DashboardPage() {
       const data = await res.json();
       if (data.success) {
         const wf = data.data.waterfallResult;
+        const fee = (wf?.allocatedToLateFee ?? 0).toFixed(2);
+        const profit = (wf?.allocatedToProfit ?? 0).toFixed(2);
+        const principal = (wf?.allocatedToPrincipal ?? 0).toFixed(2);
+        const count = wf?.settledInstallmentsCount ?? 0;
         setPaymentMessage(
-          `Payment of RM ${Number(paymentAmount).toFixed(2)} applied!\n• Late Fee: RM ${wf.allocatedLateFee.toFixed(2)}\n• Profit: RM ${wf.allocatedProfit.toFixed(2)}\n• Principal: RM ${wf.allocatedPrincipal.toFixed(2)}\n• Settled Installments: ${wf.settledInstallmentsCount}`
+          `Payment of RM ${Number(paymentAmount).toFixed(2)} applied!\n• Late Fee: RM ${fee}\n• Profit: RM ${profit}\n• Principal: RM ${principal}\n• Settled Installments: ${count}`
         );
         loadTenantData(activeTenantId);
         setTimeout(() => {
