@@ -60,7 +60,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     { name: 'Dashboard', href: '/', icon: LayoutDashboard },
     { name: 'Borrowers (CIF)', href: '/customers', icon: Users },
     { name: 'Financing Facilities', href: '/financing', icon: CreditCard },
-    { name: 'New Loan Calculator', href: '/financing/new', icon: Calculator },
+    { name: 'Loan Simulator', href: '/calculator', icon: Calculator },
     { name: 'Early Settlement', href: '/settlement', icon: DollarSign },
   ];
 

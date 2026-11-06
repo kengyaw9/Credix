@@ -137,7 +137,7 @@ export default function DashboardOverviewPage() {
             System Modules
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5">
             {/* Card 1: CIF */}
             <div className="bg-white p-6 rounded-3xl border border-slate-200 shadow-2xs hover:shadow-md transition flex flex-col justify-between space-y-5">
               <div className="space-y-3">
@@ -145,9 +145,9 @@ export default function DashboardOverviewPage() {
                   <Users className="w-6 h-6" />
                 </div>
                 <div>
-                  <h2 className="text-lg font-bold text-slate-900">Borrower Information (CIF)</h2>
+                  <h2 className="text-base font-bold text-slate-900">Borrower Profiles (CIF)</h2>
                   <p className="text-xs text-slate-500 mt-1 leading-relaxed">
-                    View borrower directory, register new profiles, and manage disbursement bank accounts.
+                    Customer directory, onboarding, employment DSR, and disbursement bank accounts.
                   </p>
                 </div>
               </div>
@@ -156,9 +156,9 @@ export default function DashboardOverviewPage() {
                 <span className="text-xs font-bold text-slate-400">{customers.length} Registered</span>
                 <Link
                   href="/customers"
-                  className="inline-flex items-center space-x-1.5 text-xs font-bold text-white bg-blue-600 hover:bg-blue-700 px-4 py-2 rounded-xl shadow-sm transition"
+                  className="inline-flex items-center space-x-1.5 text-xs font-bold text-white bg-blue-600 hover:bg-blue-700 px-3.5 py-2 rounded-xl shadow-sm transition"
                 >
-                  <span>Open CIF Module</span>
+                  <span>Open CIF</span>
                   <ArrowRight className="w-3.5 h-3.5" />
                 </Link>
               </div>
@@ -171,9 +171,9 @@ export default function DashboardOverviewPage() {
                   <CreditCard className="w-6 h-6" />
                 </div>
                 <div>
-                  <h2 className="text-lg font-bold text-slate-900">Financing Facilities</h2>
+                  <h2 className="text-base font-bold text-slate-900">Financing Facilities</h2>
                   <p className="text-xs text-slate-500 mt-1 leading-relaxed">
-                    View loan accounts, monitor real-time due installments, disburse payouts, and record repayments.
+                    Active accounts, real-time due tracking, loan disbursements, and waterfall repayments.
                   </p>
                 </div>
               </div>
@@ -182,24 +182,50 @@ export default function DashboardOverviewPage() {
                 <span className="text-xs font-bold text-slate-400">{accounts.length} Facilities</span>
                 <Link
                   href="/financing"
-                  className="inline-flex items-center space-x-1.5 text-xs font-bold text-white bg-indigo-600 hover:bg-indigo-700 px-4 py-2 rounded-xl shadow-sm transition"
+                  className="inline-flex items-center space-x-1.5 text-xs font-bold text-white bg-indigo-600 hover:bg-indigo-700 px-3.5 py-2 rounded-xl shadow-sm transition"
                 >
-                  <span>Open Facilities</span>
+                  <span>Facilities</span>
                   <ArrowRight className="w-3.5 h-3.5" />
                 </Link>
               </div>
             </div>
 
-            {/* Card 3: Early Settlement */}
+            {/* Card 3: Loan Simulator */}
+            <div className="bg-white p-6 rounded-3xl border border-slate-200 shadow-2xs hover:shadow-md transition flex flex-col justify-between space-y-5">
+              <div className="space-y-3">
+                <div className="w-12 h-12 rounded-2xl bg-purple-50 text-purple-600 flex items-center justify-center">
+                  <Calculator className="w-6 h-6" />
+                </div>
+                <div>
+                  <h2 className="text-base font-bold text-slate-900">Loan Simulator</h2>
+                  <p className="text-xs text-slate-500 mt-1 leading-relaxed">
+                    Simulate installment amounts, flat vs reducing balance schedules without creating accounts.
+                  </p>
+                </div>
+              </div>
+
+              <div className="pt-2 border-t border-slate-100 flex items-center justify-between">
+                <span className="text-xs font-bold text-purple-600 bg-purple-50 px-2 py-0.5 rounded-full text-[10px]">Sandbox</span>
+                <Link
+                  href="/calculator"
+                  className="inline-flex items-center space-x-1.5 text-xs font-bold text-white bg-purple-600 hover:bg-purple-700 px-3.5 py-2 rounded-xl shadow-sm transition"
+                >
+                  <span>Simulator</span>
+                  <ArrowRight className="w-3.5 h-3.5" />
+                </Link>
+              </div>
+            </div>
+
+            {/* Card 4: Early Settlement */}
             <div className="bg-white p-6 rounded-3xl border border-slate-200 shadow-2xs hover:shadow-md transition flex flex-col justify-between space-y-5">
               <div className="space-y-3">
                 <div className="w-12 h-12 rounded-2xl bg-emerald-50 text-emerald-600 flex items-center justify-center">
                   <DollarSign className="w-6 h-6" />
                 </div>
                 <div>
-                  <h2 className="text-lg font-bold text-slate-900">Early Settlement &amp; Rebate</h2>
+                  <h2 className="text-base font-bold text-slate-900">Early Settlement</h2>
                   <p className="text-xs text-slate-500 mt-1 leading-relaxed">
-                    Compute instant payoff quotations with unearned profit rebate (Ibra&apos;) and discharge facilities.
+                    Compute instant payoff quotations with unearned profit rebate (Ibra&apos;) and full discharge.
                   </p>
                 </div>
               </div>
@@ -208,9 +234,9 @@ export default function DashboardOverviewPage() {
                 <span className="text-xs font-bold text-slate-400">{activeCount} Eligible</span>
                 <Link
                   href="/settlement"
-                  className="inline-flex items-center space-x-1.5 text-xs font-bold text-white bg-emerald-600 hover:bg-emerald-700 px-4 py-2 rounded-xl shadow-sm transition"
+                  className="inline-flex items-center space-x-1.5 text-xs font-bold text-white bg-emerald-600 hover:bg-emerald-700 px-3.5 py-2 rounded-xl shadow-sm transition"
                 >
-                  <span>Open Settlement</span>
+                  <span>Settlement</span>
                   <ArrowRight className="w-3.5 h-3.5" />
                 </Link>
               </div>

@@ -128,10 +128,18 @@ export default function CustomersListPage() {
 
                     <div className="flex items-center space-x-2 shrink-0 self-end sm:self-center">
                       <Link
-                        href={`/customers/${c.id}`}
-                        className="inline-flex items-center space-x-1 text-xs font-bold text-slate-700 hover:text-indigo-600 bg-slate-100 hover:bg-slate-200 px-3.5 py-2 rounded-xl transition"
+                        href={`/financing/new?customerId=${c.id}`}
+                        className="inline-flex items-center space-x-1.5 text-xs font-bold text-white bg-indigo-600 hover:bg-indigo-700 px-3.5 py-2 rounded-xl shadow-xs transition"
                       >
-                        <span>View Profile &amp; Facilities</span>
+                        <PlusCircle className="w-3.5 h-3.5" />
+                        <span>Create Loan</span>
+                      </Link>
+
+                      <Link
+                        href={`/customers/${c.id}`}
+                        className="inline-flex items-center space-x-1 text-xs font-bold text-slate-700 hover:text-indigo-600 bg-slate-100 hover:bg-slate-200 px-3 py-2 rounded-xl transition"
+                      >
+                        <span>Profile</span>
                         <ChevronRight className="w-3.5 h-3.5" />
                       </Link>
                     </div>

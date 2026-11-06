@@ -542,28 +542,28 @@ export default function NewCustomerPage() {
                   </div>
 
                   <div>
-                    <label className="block text-xs font-bold text-emerald-800 mb-1">Monthly Net Income / Take-Home Pay (RM)</label>
+                    <label className="block text-xs font-bold text-slate-700 mb-1">Monthly Net Income / Take-Home Pay (RM)</label>
                     <input
                       type="number"
                       required
                       step="100"
                       value={form.monthlyNetIncome}
                       onChange={e => setForm({ ...form, monthlyNetIncome: Number(e.target.value) })}
-                      className="w-full text-sm p-2.5 rounded-xl border border-emerald-300 bg-white focus:ring-2 focus:ring-emerald-500 font-extrabold text-emerald-700"
+                      className="w-full text-sm p-2.5 rounded-xl border border-slate-200 bg-white focus:ring-2 focus:ring-indigo-500 font-bold text-slate-900"
                     />
                   </div>
                 </div>
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div>
-                    <label className="block text-xs font-bold text-rose-800 mb-1">Existing Monthly Commitments (RM)</label>
+                    <label className="block text-xs font-bold text-slate-700 mb-1">Existing Monthly Commitments (RM)</label>
                     <input
                       type="number"
                       step="50"
                       placeholder="Car loan, housing loan, credit cards"
                       value={form.monthlyCommitments}
                       onChange={e => setForm({ ...form, monthlyCommitments: Number(e.target.value) })}
-                      className="w-full text-sm p-2.5 rounded-xl border border-rose-300 bg-white focus:ring-2 focus:ring-rose-500 font-bold text-rose-700"
+                      className="w-full text-sm p-2.5 rounded-xl border border-slate-200 bg-white focus:ring-2 focus:ring-indigo-500 font-bold text-slate-900"
                     />
                     <span className="text-[10px] text-slate-400 mt-0.5 block">External ongoing repayments</span>
                   </div>
