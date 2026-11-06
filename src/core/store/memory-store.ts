@@ -15,6 +15,15 @@ export interface Tenant {
   status: 'ACTIVE' | 'SUSPENDED';
 }
 
+export interface User {
+  id: string;
+  tenantId: string;
+  email: string;
+  password: string; // Plain for demo/prototype; hashed in production
+  fullName: string;
+  role: 'ADMIN' | 'MANAGER' | 'OFFICER';
+}
+
 export interface Customer {
   id: string;
   tenantId: string;
@@ -23,6 +32,7 @@ export interface Customer {
   fullName: string;
   phone: string;
   email: string;
+  address?: string;
   bankName: string;
   bankAccountNo: string;
   createdAt: string;
@@ -84,6 +94,25 @@ class MultiTenantDatabase {
     },
   ];
 
+  public users: User[] = [
+    {
+      id: 'usr-1',
+      tenantId: '11111111-1111-1111-1111-111111111111', // Apex
+      email: 'officer@apex.com',
+      password: 'password123',
+      fullName: 'Sarah Tan (Senior Credit Officer)',
+      role: 'OFFICER',
+    },
+    {
+      id: 'usr-2',
+      tenantId: '22222222-2222-2222-2222-222222222222', // Metro
+      email: 'officer@metro.com',
+      password: 'password123',
+      fullName: 'Kamal Hassan (Financing Manager)',
+      role: 'MANAGER',
+    },
+  ];
+
   public customers: Customer[] = [
     {
       id: 'cust-101',
@@ -93,9 +122,23 @@ class MultiTenantDatabase {
       fullName: 'Ahmad bin Razak',
       phone: '+6012-3456789',
       email: 'ahmad.razak@example.com',
+      address: 'No 15, Jalan Melati 3, 50480 Kuala Lumpur',
       bankName: 'Maybank',
       bankAccountNo: '114012345678',
       createdAt: '2026-01-01T08:00:00Z',
+    },
+    {
+      id: 'cust-102',
+      tenantId: '11111111-1111-1111-1111-111111111111', // Also Belongs to Apex Credit
+      idType: 'NRIC',
+      idNumber: '951120-10-6721',
+      fullName: 'Lim Mei Ling',
+      phone: '+6016-8877665',
+      email: 'meiling.lim@example.com',
+      address: '22A, Lorong Helang, 47301 Petaling Jaya',
+      bankName: 'Public Bank',
+      bankAccountNo: '3190887722',
+      createdAt: '2026-02-10T11:00:00Z',
     },
     {
       id: 'cust-201',
@@ -105,6 +148,7 @@ class MultiTenantDatabase {
       fullName: 'Tan Wei Ming',
       phone: '+6017-9876543',
       email: 'tan.wm@example.com',
+      address: 'Lot 45, Jalan Tun Razak, Johor Bahru',
       bankName: 'CIMB Bank',
       bankAccountNo: '8001234567',
       createdAt: '2026-02-01T09:00:00Z',
@@ -213,9 +257,78 @@ class MultiTenantDatabase {
       schedule: ahmadSchedule,
       createdAt: '2026-01-01T08:30:00Z',
     });
+
+    // Metro initial loan
+    const metroSchedule: ScheduleItem[] = [
+      {
+        installmentNo: 1,
+        dueDate: '2026-03-01',
+        principalDue: 1000,
+        profitDue: 100,
+        totalDue: 1100,
+        endingBalance: 9000,
+        principalPaid: 1000,
+        profitPaid: 100,
+        status: 'PAID',
+        paidAt: '2026-03-01T10:00:00Z',
+      },
+      {
+        installmentNo: 2,
+        dueDate: '2026-04-01',
+        principalDue: 1000,
+        profitDue: 100,
+        totalDue: 1100,
+        endingBalance: 8000,
+        principalPaid: 0,
+        profitPaid: 0,
+        status: 'UNPAID',
+      },
+      {
+        installmentNo: 3,
+        dueDate: '2026-05-01',
+        principalDue: 1000,
+        profitDue: 100,
+        totalDue: 1100,
+        endingBalance: 7000,
+        principalPaid: 0,
+        profitPaid: 0,
+        status: 'UNPAID',
+      },
+    ];
+
+    this.accounts.push({
+      id: 'acc-201',
+      tenantId: '22222222-2222-2222-2222-222222222222', // Metro Micro
+      customerId: 'cust-201',
+      accountNo: 'MM-2026-0001',
+      calcMethod: 'FLAT_RATE',
+      principalAmount: 10000,
+      profitRatePA: 12,
+      tenorMonths: 3,
+      totalProfit: 300,
+      totalPayable: 10300,
+      monthlyInstallment: 1100,
+      lateFeeRatePA: 1.0,
+      processingFee: 200,
+      stampDutyFee: 50,
+      disbursedAmount: 9750,
+      disbursedAt: '2026-02-01T10:00:00Z',
+      payoutRef: 'TRF-MM-4401',
+      status: 'ACTIVE',
+      schedule: metroSchedule,
+      createdAt: '2026-02-01T09:30:00Z',
+    });
   }
 
   // Strict Tenant Isolated Operations
+
+  public findUserByEmail(email: string): User | undefined {
+    return this.users.find(u => u.email.toLowerCase() === email.toLowerCase());
+  }
+
+  public getTenantById(id: string): Tenant | undefined {
+    return this.tenants.find(t => t.id === id);
+  }
 
   public getCustomers(tenantId: string): Customer[] {
     return this.customers.filter(c => c.tenantId === tenantId);
@@ -238,6 +351,10 @@ class MultiTenantDatabase {
 
   public getAccounts(tenantId: string): FinancingAccount[] {
     return this.accounts.filter(a => a.tenantId === tenantId);
+  }
+
+  public getAccountsByCustomer(tenantId: string, customerId: string): FinancingAccount[] {
+    return this.accounts.filter(a => a.tenantId === tenantId && a.customerId === customerId);
   }
 
   public getAccountById(tenantId: string, id: string): FinancingAccount | undefined {

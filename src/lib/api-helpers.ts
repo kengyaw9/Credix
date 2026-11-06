@@ -11,6 +11,20 @@ export function getTenantIdFromRequest(req: NextRequest): string {
   if (headerTenantId && headerTenantId.trim() !== '') {
     return headerTenantId.trim();
   }
+
+  // Also check auth cookie
+  const cookie = req.cookies.get('ff_session');
+  if (cookie?.value) {
+    try {
+      const session = JSON.parse(cookie.value);
+      if (session.tenantId) {
+        return session.tenantId;
+      }
+    } catch {
+      // ignore
+    }
+  }
+
   return DEFAULT_TENANT_ID;
 }
 
