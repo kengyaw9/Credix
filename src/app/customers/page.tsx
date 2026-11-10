@@ -118,13 +118,7 @@ function CustomersListContent() {
           </div>
         ) : (
           <div className="divide-y divide-slate-100">
-            {filtered.map(c => {
-              const initials = c.fullName
-                .split(' ')
-                .map(n => n[0])
-                .slice(0, 2)
-                .join('')
-                .toUpperCase();
+            {filtered.map((c, index) => {
 
               return (
                 <div
@@ -132,9 +126,7 @@ function CustomersListContent() {
                   className="p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4 hover:bg-slate-50/60 transition"
                 >
                   <div className="flex items-start space-x-4">
-                    <div className="w-10 h-10 rounded-2xl bg-indigo-50 text-indigo-700 font-bold text-sm flex items-center justify-center border border-indigo-150 shrink-0 mt-0.5">
-                      {initials}
-                    </div>
+                    <span className="text-xs font-mono font-bold text-slate-400 bg-slate-100 px-2.5 py-1 rounded-lg shrink-0 mt-0.5">#{index + 1}</span>
 
                     <div className="space-y-1">
                       <div className="flex items-center space-x-2">

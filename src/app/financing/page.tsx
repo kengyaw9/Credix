@@ -128,14 +128,10 @@ export default function FinancingListPage() {
                 <tbody className="divide-y divide-slate-100">
                   {filtered.map(acc => {
                     const rt = acc.realtimeStatus;
-                    const initials = acc.customerName.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase();
-                    return (
+                                        return (
                       <tr key={acc.id} className="hover:bg-slate-50/80 transition">
                         <td className="p-4">
                           <div className="flex items-center space-x-3">
-                            <div className="w-8 h-8 rounded-xl bg-indigo-50 text-indigo-700 font-bold text-xs flex items-center justify-center border border-indigo-150 shrink-0">
-                              {initials}
-                            </div>
                             <div>
                               <Link href={`/financing/${acc.id}`} className="font-bold text-slate-900 hover:text-indigo-600 transition block">
                                 {acc.accountNo}
