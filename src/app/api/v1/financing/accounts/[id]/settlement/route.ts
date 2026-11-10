@@ -1,5 +1,5 @@
 import { NextRequest } from 'next/server';
-import { db } from '@/core/store/memory-store';
+import { pgDb } from '@/core/store/db-store';
 import { calculateEarlySettlementQuote } from '@/core/financing/settlement';
 import { getTenantIdFromRequest, apiSuccess, apiError } from '@/lib/api-helpers';
 
@@ -9,7 +9,7 @@ export async function GET(
 ) {
   const { id } = await params;
   const tenantId = getTenantIdFromRequest(req);
-  const account = db.getAccountById(tenantId, id);
+  const account = await pgDb.getAccountById(tenantId, id);
 
   if (!account) {
     return apiError('Financing account not found', 404);
@@ -19,10 +19,11 @@ export async function GET(
   const asOfDate = searchParams.get('asOfDate') || new Date().toISOString().split('T')[0];
 
   const quotation = calculateEarlySettlementQuote(account.schedule, account.lateFeeRatePA, asOfDate);
+  const customer = await pgDb.getCustomerById(tenantId, account.customerId);
 
   return apiSuccess({
     accountNo: account.accountNo,
-    customerName: db.getCustomerById(tenantId, account.customerId)?.fullName,
+    customerName: customer?.fullName,
     quotation,
   });
 }
@@ -34,7 +35,7 @@ export async function POST(
   try {
     const { id } = await params;
     const tenantId = getTenantIdFromRequest(req);
-    const account = db.getAccountById(tenantId, id);
+    const account = await pgDb.getAccountById(tenantId, id);
 
     if (!account) {
       return apiError('Financing account not found', 404);
@@ -58,13 +59,13 @@ export async function POST(
     }));
 
     // Update account to SETTLED
-    const updated = db.updateAccount(tenantId, id, {
+    const updated = await pgDb.updateAccount(tenantId, id, {
       status: 'SETTLED',
       schedule: settledSchedule,
     });
 
     // Record settlement transaction
-    db.addTransaction(tenantId, {
+    await pgDb.addTransaction(tenantId, {
       financingId: id,
       txType: 'SETTLEMENT',
       amount: quote.netSettlementAmount,

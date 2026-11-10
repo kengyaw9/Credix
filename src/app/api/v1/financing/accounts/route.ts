@@ -1,16 +1,18 @@
 import { NextRequest } from 'next/server';
-import { db } from '@/core/store/memory-store';
+import { pgDb } from '@/core/store/db-store';
 import { calculateFinancingSchedule } from '@/core/financing/calculator';
 import { evaluateRealTimeAccountStatus } from '@/core/financing/due-tracker';
 import { getTenantIdFromRequest, apiSuccess, apiError } from '@/lib/api-helpers';
 
 export async function GET(req: NextRequest) {
   const tenantId = getTenantIdFromRequest(req);
-  const accounts = db.getAccounts(tenantId);
+  const accounts = await pgDb.getAccounts(tenantId);
+  const customers = await pgDb.getCustomers(tenantId);
+  const customerMap = new Map(customers.map(c => [c.id, c]));
 
   // Augment each account with its dynamic real-time status
   const accountsWithRealtimeStatus = accounts.map(acc => {
-    const customer = db.getCustomerById(tenantId, acc.customerId);
+    const customer = customerMap.get(acc.customerId);
     const realtimeStatus = evaluateRealTimeAccountStatus(acc.schedule, acc.lateFeeRatePA);
     return {
       ...acc,
@@ -33,7 +35,7 @@ export async function POST(req: NextRequest) {
     }
 
     // Verify customer exists under current tenant
-    const customer = db.getCustomerById(tenantId, body.customerId);
+    const customer = await pgDb.getCustomerById(tenantId, body.customerId);
     if (!customer) {
       return apiError('Customer not found in your institute');
     }
@@ -47,12 +49,12 @@ export async function POST(req: NextRequest) {
       repaymentDayOfMonth: body.repaymentDayOfMonth ? Number(body.repaymentDayOfMonth) : undefined,
     });
 
-    const tenant = db.tenants.find(t => t.id === tenantId);
+    const tenant = await pgDb.getTenantById(tenantId);
     const prefix = tenant ? tenant.code.substring(0, 3) : 'FIN';
     const randomSeq = Math.floor(1000 + Math.random() * 9000);
     const accountNo = `${prefix}-${new Date().getFullYear()}-${randomSeq}`;
 
-    const newAccount = db.addAccount(tenantId, {
+    const newAccount = await pgDb.addAccount(tenantId, {
       customerId: body.customerId,
       accountNo,
       calcMethod: body.calcMethod || 'FLAT_RATE',

@@ -1,5 +1,5 @@
 import { NextRequest } from 'next/server';
-import { db } from '@/core/store/memory-store';
+import { pgDb } from '@/core/store/db-store';
 import { evaluateRealTimeAccountStatus } from '@/core/financing/due-tracker';
 import { applyPaymentWaterfall } from '@/core/financing/waterfall';
 import { getTenantIdFromRequest, apiSuccess, apiError } from '@/lib/api-helpers';
@@ -11,7 +11,7 @@ export async function POST(
   try {
     const { id } = await params;
     const tenantId = getTenantIdFromRequest(req);
-    const account = db.getAccountById(tenantId, id);
+    const account = await pgDb.getAccountById(tenantId, id);
 
     if (!account) {
       return apiError('Financing account not found', 404);
@@ -48,13 +48,13 @@ export async function POST(
     const newStatus = isFullyPaid ? 'SETTLED' : 'ACTIVE';
 
     // 4. Update account with new schedule and status
-    const updatedAccount = db.updateAccount(tenantId, id, {
+    const updatedAccount = await pgDb.updateAccount(tenantId, id, {
       schedule: waterfallResult.updatedSchedule,
       status: newStatus,
     });
 
     // 5. Record repayment audit transaction
-    db.addTransaction(tenantId, {
+    await pgDb.addTransaction(tenantId, {
       financingId: id,
       txType: 'REPAYMENT',
       amount,

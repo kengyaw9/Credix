@@ -1,5 +1,5 @@
 import { NextRequest } from 'next/server';
-import { db } from '@/core/store/memory-store';
+import { pgDb } from '@/core/store/db-store';
 import { evaluateRealTimeAccountStatus } from '@/core/financing/due-tracker';
 import { getTenantIdFromRequest, apiSuccess, apiError } from '@/lib/api-helpers';
 
@@ -9,14 +9,14 @@ export async function GET(
 ) {
   const { id } = await params;
   const tenantId = getTenantIdFromRequest(req);
-  const account = db.getAccountById(tenantId, id);
+  const account = await pgDb.getAccountById(tenantId, id);
 
   if (!account) {
     return apiError('Financing account not found', 404);
   }
 
-  const customer = db.getCustomerById(tenantId, account.customerId);
-  const transactions = db.getTransactions(tenantId, account.id);
+  const customer = await pgDb.getCustomerById(tenantId, account.customerId);
+  const transactions = await pgDb.getTransactions(tenantId, account.id);
   const realtimeStatus = evaluateRealTimeAccountStatus(account.schedule, account.lateFeeRatePA);
 
   return apiSuccess({

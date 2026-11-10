@@ -1,10 +1,10 @@
 import { NextRequest } from 'next/server';
-import { db } from '@/core/store/memory-store';
+import { pgDb } from '@/core/store/db-store';
 import { getTenantIdFromRequest, apiSuccess, apiError } from '@/lib/api-helpers';
 
 export async function GET(req: NextRequest) {
   const tenantId = getTenantIdFromRequest(req);
-  const customers = db.getCustomers(tenantId);
+  const customers = await pgDb.getCustomers(tenantId);
   return apiSuccess(customers);
 }
 
@@ -18,12 +18,12 @@ export async function POST(req: NextRequest) {
     }
 
     // Check duplicate IC within same tenant
-    const existing = db.getCustomers(tenantId).find(c => c.idNumber === body.idNumber);
+    const existing = await pgDb.getCustomerByIdNumber(tenantId, body.idNumber);
     if (existing) {
       return apiError(`Customer with ID number ${body.idNumber} already exists in your institute.`);
     }
 
-    const customer = db.addCustomer(tenantId, {
+    const customer = await pgDb.addCustomer(tenantId, {
       idType: body.idType || 'NRIC',
       idNumber: body.idNumber,
       fullName: body.fullName,

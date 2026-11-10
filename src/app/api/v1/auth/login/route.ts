@@ -1,5 +1,5 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { db } from '@/core/store/memory-store';
+import { NextRequest } from 'next/server';
+import { pgDb } from '@/core/store/db-store';
 import { apiSuccess, apiError } from '@/lib/api-helpers';
 
 export async function POST(req: NextRequest) {
@@ -11,12 +11,12 @@ export async function POST(req: NextRequest) {
       return apiError('Please provide email and password');
     }
 
-    const user = db.findUserByEmail(email);
+    const user = await pgDb.findUserByEmail(email);
     if (!user || user.password !== password) {
       return apiError('Invalid email or password', 401);
     }
 
-    const tenant = db.getTenantById(user.tenantId);
+    const tenant = await pgDb.getTenantById(user.tenantId);
     if (!tenant) {
       return apiError('Tenant organization not found', 404);
     }
@@ -35,7 +35,7 @@ export async function POST(req: NextRequest) {
 
     // Set auth cookie
     response.cookies.set('ff_session', JSON.stringify(sessionData), {
-      httpOnly: false, // Accessible by client for session state
+      httpOnly: false,
       path: '/',
       maxAge: 60 * 60 * 24 * 7, // 7 days
       sameSite: 'lax',

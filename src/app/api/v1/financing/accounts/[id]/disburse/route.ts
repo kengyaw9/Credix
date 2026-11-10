@@ -1,5 +1,5 @@
 import { NextRequest } from 'next/server';
-import { db } from '@/core/store/memory-store';
+import { pgDb } from '@/core/store/db-store';
 import { getTenantIdFromRequest, apiSuccess, apiError } from '@/lib/api-helpers';
 
 export async function POST(
@@ -9,7 +9,7 @@ export async function POST(
   try {
     const { id } = await params;
     const tenantId = getTenantIdFromRequest(req);
-    const account = db.getAccountById(tenantId, id);
+    const account = await pgDb.getAccountById(tenantId, id);
 
     if (!account) {
       return apiError('Financing account not found', 404);
@@ -27,7 +27,7 @@ export async function POST(
     const netDisbursed = account.principalAmount - (account.processingFee || 0) - (account.stampDutyFee || 0);
 
     // Update account
-    const updated = db.updateAccount(tenantId, id, {
+    const updated = await pgDb.updateAccount(tenantId, id, {
       status: 'ACTIVE',
       disbursedAmount: netDisbursed,
       disbursedAt,
@@ -36,7 +36,7 @@ export async function POST(
 
     // Record upfront fee charges in ledger if applicable
     if (account.processingFee && account.processingFee > 0) {
-      db.addTransaction(tenantId, {
+      await pgDb.addTransaction(tenantId, {
         financingId: id,
         txType: 'FEE_CHARGE',
         amount: account.processingFee,
@@ -51,7 +51,7 @@ export async function POST(
     }
 
     if (account.stampDutyFee && account.stampDutyFee > 0) {
-      db.addTransaction(tenantId, {
+      await pgDb.addTransaction(tenantId, {
         financingId: id,
         txType: 'FEE_CHARGE',
         amount: account.stampDutyFee,
@@ -66,7 +66,7 @@ export async function POST(
     }
 
     // Record disbursement transaction
-    db.addTransaction(tenantId, {
+    await pgDb.addTransaction(tenantId, {
       financingId: id,
       txType: 'DISBURSEMENT',
       amount: netDisbursed,
