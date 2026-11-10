@@ -2,7 +2,7 @@ import { neon } from '@neondatabase/serverless';
 import * as fs from 'fs';
 import * as path from 'path';
 
-const databaseUrl = process.env.DATABASE_URL || process.env.POSTGRES_URL;
+const databaseUrl = process.env.DATABASE_URL || process.env.POSTGRES_URL || '';
 if (!databaseUrl) {
   console.error('DATABASE_URL or POSTGRES_URL is required to run init-db');
   process.exit(1);
