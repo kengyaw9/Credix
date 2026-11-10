@@ -97,7 +97,7 @@ export default function NewCustomerPage() {
           </Link>
           <div>
             <h1 className="text-2xl font-bold text-slate-900 tracking-tight">Register Borrower (CIF Profile)</h1>
-            <p className="text-xs text-slate-500">M30 Customer Information File creation for credit underwriting</p>
+            <p className="text-xs text-slate-500">Borrower profile onboarding for credit assessment and loan origination</p>
           </div>
         </div>
 
@@ -165,7 +165,7 @@ export default function NewCustomerPage() {
           {activeTab === 'personal' && (
             <div className="space-y-4">
               <div className="border-b border-slate-100 pb-2">
-                <h2 className="text-base font-bold text-slate-900">Personal &amp; Identity Details (M30 Tab 1)</h2>
+                <h2 className="text-base font-bold text-slate-900">Personal &amp; Identity Details</h2>
                 <p className="text-xs text-slate-500">Legal name, identification document, and demographic verification</p>
               </div>
 
@@ -317,7 +317,7 @@ export default function NewCustomerPage() {
           {activeTab === 'address' && (
             <div className="space-y-4">
               <div className="border-b border-slate-100 pb-2">
-                <h2 className="text-base font-bold text-slate-900">Contact &amp; Residential Information (M30 Tab 2)</h2>
+                <h2 className="text-base font-bold text-slate-900">Contact &amp; Residential Information</h2>
                 <p className="text-xs text-slate-500">Physical address, residence ownership type, and contact channels</p>
               </div>
 
@@ -455,7 +455,7 @@ export default function NewCustomerPage() {
           {activeTab === 'employment' && (
             <div className="space-y-4">
               <div className="border-b border-slate-100 pb-2">
-                <h2 className="text-base font-bold text-slate-900">Employment &amp; Income Assessment (M30 Tab 3 &amp; 4)</h2>
+                <h2 className="text-base font-bold text-slate-900">Employment &amp; Income Assessment</h2>
                 <p className="text-xs text-slate-500">Required by financiers to compute Debt Service Ratio (DSR) &amp; repayment capacity</p>
               </div>
 

@@ -2,7 +2,11 @@ import { neon } from '@neondatabase/serverless';
 import { Customer, FinancingAccount, FinancingTransaction, Tenant, User } from './memory-store';
 
 const getSql = () => {
-  const connectionString = process.env.DATABASE_URL || process.env.POSTGRES_URL;
+  const connectionString =
+    process.env.DATABASE_URL ||
+    process.env.POSTGRES_URL ||
+    process.env.STORAGE_DATABASE_URL ||
+    process.env.STORAGE_POSTGRES_URL;
   if (!connectionString) {
     throw new Error('DATABASE_URL or POSTGRES_URL is not set');
   }

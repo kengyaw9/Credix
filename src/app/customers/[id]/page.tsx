@@ -158,14 +158,14 @@ export default function CustomerDetailPage({ params }: { params: Promise<{ id: s
           </div>
         </div>
 
-        {/* 4 Detailed Profile Cards (M30 Tabs Representation) */}
+        {/* 4 Detailed Profile Cards */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           {/* 1. Identity & Demographics */}
           <div className="bg-white p-6 rounded-3xl border border-slate-200/90 shadow-2xs space-y-4">
             <div className="flex items-center space-x-2 text-indigo-600 border-b border-slate-100 pb-3">
               <User className="w-4 h-4" />
               <h2 className="text-xs font-bold uppercase tracking-wider text-slate-900">
-                1. Identity &amp; Demographics (M30 Tab 1)
+                1. Identity &amp; Demographics
               </h2>
             </div>
 
@@ -198,7 +198,7 @@ export default function CustomerDetailPage({ params }: { params: Promise<{ id: s
             <div className="flex items-center space-x-2 text-indigo-600 border-b border-slate-100 pb-3">
               <MapPin className="w-4 h-4" />
               <h2 className="text-xs font-bold uppercase tracking-wider text-slate-900">
-                2. Contact &amp; Residential Address (M30 Tab 2)
+                2. Contact &amp; Residential Address
               </h2>
             </div>
 
@@ -236,7 +236,7 @@ export default function CustomerDetailPage({ params }: { params: Promise<{ id: s
             <div className="flex items-center space-x-2 text-indigo-600 border-b border-slate-100 pb-3">
               <Briefcase className="w-4 h-4" />
               <h2 className="text-xs font-bold uppercase tracking-wider text-slate-900">
-                3. Employment Information (M30 Tab 3 &amp; 4)
+                3. Employment &amp; Income Assessment
               </h2>
             </div>
 
@@ -269,7 +269,7 @@ export default function CustomerDetailPage({ params }: { params: Promise<{ id: s
             <div className="flex items-center space-x-2 text-indigo-600 border-b border-slate-100 pb-3">
               <ShieldCheck className="w-4 h-4" />
               <h2 className="text-xs font-bold uppercase tracking-wider text-slate-900">
-                4. Next of Kin &amp; Disbursement Bank (M30 Tab 4)
+                4. Next of Kin &amp; Disbursement Bank
               </h2>
             </div>
 

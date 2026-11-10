@@ -28,7 +28,7 @@ export interface Customer {
   id: string;
   tenantId: string;
   
-  // 1. Primary & Identity Information (M30 Tab 1)
+  // 1. Primary & Identity Information
   idType: 'NRIC' | 'PASSPORT' | 'POLICE_ARMY' | 'BRN';
   idNumber: string;
   fullName: string;
@@ -40,7 +40,7 @@ export interface Customer {
   religion?: string; // Islam, Buddha, Hindu, Christian, Others
   mothersMaidenName?: string; // Security verification
 
-  // 2. Contact & Address Information (M30 Tab 2)
+  // 2. Contact & Address Information
   phone: string; // Mobile
   homePhone?: string;
   officePhone?: string;
@@ -53,7 +53,7 @@ export interface Customer {
   lengthOfStayYears?: number;
   correspondenceAddress?: string;
 
-  // 3. Employment & Income Assessment (M30 Tab 3 & 4)
+  // 3. Employment & Income Assessment
   employerName: string;
   occupation: string;
   employmentType: 'PERMANENT' | 'CONTRACT' | 'SELF_EMPLOYED' | 'GOVERNMENT';
@@ -64,7 +64,7 @@ export interface Customer {
   monthlyCommitments: number; // Existing bank loans, car, credit cards
   monthlyExpenses?: number;
 
-  // 4. Emergency Contact / Next of Kin (M30 Tab 4)
+  // 4. Emergency Contact / Next of Kin
   emergencyContactName: string;
   emergencyContactRelationship: string; // Spouse, Parent, Sibling, Friend
   emergencyContactPhone: string;
