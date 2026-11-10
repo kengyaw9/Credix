@@ -6,7 +6,13 @@
  */
 
 // Method used to compute loan interest / profit
-export type CalculationMethod = 'FLAT_RATE' | 'REDUCING_BALANCE';
+export type CalculationMethod = 
+  | 'FLAT_R78'          // Hire Purchase (R78) - Sum of Digits under Malaysian HP Act 1967
+  | 'FLAT_STRAIGHT'     // Straight Flat Rate (Equal monthly principal & profit)
+  | 'REDUCING_MONTHLY'  // Monthly Reducing Balance (Amortized monthly rest)
+  | 'REDUCING_DAILY'    // Daily Reducing Balance (Accrued daily rest)
+  | 'FLAT_RATE'         // Legacy alias -> maps to FLAT_R78
+  | 'REDUCING_BALANCE'; // Legacy alias -> maps to REDUCING_MONTHLY
 
 // Financing Account Lifecycle Status
 export type FinancingStatus = 
@@ -40,7 +46,7 @@ export interface FinancingQuoteParams {
   profitRatePA: number;       // Annual rate as a percentage, e.g., 8.5 for 8.5% p.a.
   tenorMonths: number;        // Total duration in months, e.g., 12, 24, 36
   startDate: string;          // YYYY-MM-DD (Disbursement date / agreement date)
-  calcMethod: CalculationMethod; // 'FLAT_RATE' or 'REDUCING_BALANCE'
+  calcMethod: CalculationMethod; // 'FLAT_R78', 'FLAT_STRAIGHT', 'REDUCING_MONTHLY', 'REDUCING_DAILY'
   repaymentDayOfMonth?: number; // Optional day of month due (1-28, default: same day as startDate)
   lateFeeRatePA?: number;     // Annual late fee penalty rate, e.g., 1% p.a.
 }

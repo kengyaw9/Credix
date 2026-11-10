@@ -21,7 +21,8 @@ import {
   ShieldCheck
 } from 'lucide-react';
 import { Customer } from '@/core/store/memory-store';
-import { ScheduleItem } from '@/core/financing/types';
+import { ScheduleItem, CalculationMethod } from '@/core/financing/types';
+import { getCalcMethodLabel } from '@/core/financing/calculator';
 
 function NewFinancingContent() {
   const router = useRouter();
@@ -43,7 +44,11 @@ function NewFinancingContent() {
     principalAmount: queryPrincipal ? Number(queryPrincipal) : 10000,
     profitRatePA: queryRate ? Number(queryRate) : 10,
     tenorMonths: queryTenor ? Number(queryTenor) : 12,
-    calcMethod: (queryMethod === 'REDUCING_BALANCE' ? 'REDUCING_BALANCE' : 'FLAT_RATE') as 'FLAT_RATE' | 'REDUCING_BALANCE',
+    calcMethod: (['FLAT_R78', 'FLAT_STRAIGHT', 'REDUCING_MONTHLY', 'REDUCING_DAILY'].includes(queryMethod as any)
+      ? (queryMethod as CalculationMethod)
+      : queryMethod === 'REDUCING_BALANCE'
+      ? 'REDUCING_MONTHLY'
+      : 'FLAT_R78') as CalculationMethod,
     startDate: new Date().toISOString().split('T')[0],
     processingFee: queryProcFee !== null ? Number(queryProcFee) : 150,
     stampDutyFee: queryStampDuty !== null ? Number(queryStampDuty) : 50,
@@ -291,7 +296,7 @@ function NewFinancingContent() {
                 <h2 className="font-bold text-slate-900 text-sm uppercase tracking-wider">Facility Terms</h2>
               </div>
               <span className="text-[10px] font-bold text-indigo-600 bg-indigo-50 px-2.5 py-1 rounded-full uppercase tracking-wider">
-                {form.calcMethod.replace('_', ' ')}
+                {getCalcMethodLabel(form.calcMethod)}
               </span>
             </div>
 
@@ -303,29 +308,58 @@ function NewFinancingContent() {
 
             <form onSubmit={handleCreateFacility} className="space-y-4">
               <div>
-                <label className="block text-xs font-bold text-slate-700 mb-1.5">Interest / Profit Model</label>
-                <div className="grid grid-cols-2 gap-2">
+                <label className="block text-xs font-bold text-slate-700 mb-2">Interest / Profit Calculation Model</label>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
                   <button
                     type="button"
-                    onClick={() => setForm({ ...form, calcMethod: 'FLAT_RATE' })}
-                    className={`py-2.5 text-xs font-bold rounded-xl border transition cursor-pointer ${
-                      form.calcMethod === 'FLAT_RATE'
-                        ? 'border-indigo-600 bg-indigo-600 text-white shadow-sm'
-                        : 'border-slate-200 text-slate-600 hover:bg-slate-50'
+                    onClick={() => setForm({ ...form, calcMethod: 'FLAT_R78' })}
+                    className={`p-3 text-left rounded-2xl border transition cursor-pointer flex flex-col justify-between ${
+                      form.calcMethod === 'FLAT_R78' || (form.calcMethod as string) === 'FLAT_RATE'
+                        ? 'border-indigo-600 bg-indigo-50/80 text-indigo-950 ring-2 ring-indigo-500/20 shadow-xs'
+                        : 'border-slate-200 text-slate-700 hover:bg-slate-50'
                     }`}
                   >
-                    Flat Rate (Hire Purchase)
+                    <div className="text-xs font-bold">Hire Purchase (R78)</div>
+                    <div className="text-[10px] text-slate-500 mt-1">Sum of Digits • HP Act 1967 standard</div>
                   </button>
+
                   <button
                     type="button"
-                    onClick={() => setForm({ ...form, calcMethod: 'REDUCING_BALANCE' })}
-                    className={`py-2.5 text-xs font-bold rounded-xl border transition cursor-pointer ${
-                      form.calcMethod === 'REDUCING_BALANCE'
-                        ? 'border-indigo-600 bg-indigo-600 text-white shadow-sm'
-                        : 'border-slate-200 text-slate-600 hover:bg-slate-50'
+                    onClick={() => setForm({ ...form, calcMethod: 'FLAT_STRAIGHT' })}
+                    className={`p-3 text-left rounded-2xl border transition cursor-pointer flex flex-col justify-between ${
+                      form.calcMethod === 'FLAT_STRAIGHT'
+                        ? 'border-indigo-600 bg-indigo-50/80 text-indigo-950 ring-2 ring-indigo-500/20 shadow-xs'
+                        : 'border-slate-200 text-slate-700 hover:bg-slate-50'
                     }`}
                   >
-                    Reducing Balance
+                    <div className="text-xs font-bold">Straight Flat Rate</div>
+                    <div className="text-[10px] text-slate-500 mt-1">Equal monthly profit &amp; principal</div>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => setForm({ ...form, calcMethod: 'REDUCING_MONTHLY' })}
+                    className={`p-3 text-left rounded-2xl border transition cursor-pointer flex flex-col justify-between ${
+                      form.calcMethod === 'REDUCING_MONTHLY' || (form.calcMethod as string) === 'REDUCING_BALANCE'
+                        ? 'border-indigo-600 bg-indigo-50/80 text-indigo-950 ring-2 ring-indigo-500/20 shadow-xs'
+                        : 'border-slate-200 text-slate-700 hover:bg-slate-50'
+                    }`}
+                  >
+                    <div className="text-xs font-bold">Monthly Reducing</div>
+                    <div className="text-[10px] text-slate-500 mt-1">Amortized monthly rest balance</div>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => setForm({ ...form, calcMethod: 'REDUCING_DAILY' })}
+                    className={`p-3 text-left rounded-2xl border transition cursor-pointer flex flex-col justify-between ${
+                      form.calcMethod === 'REDUCING_DAILY'
+                        ? 'border-indigo-600 bg-indigo-50/80 text-indigo-950 ring-2 ring-indigo-500/20 shadow-xs'
+                        : 'border-slate-200 text-slate-700 hover:bg-slate-50'
+                    }`}
+                  >
+                    <div className="text-xs font-bold">Daily Reducing</div>
+                    <div className="text-[10px] text-slate-500 mt-1">Exact calendar days rest (365 days)</div>
                   </button>
                 </div>
               </div>

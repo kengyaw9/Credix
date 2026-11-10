@@ -5,7 +5,8 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import DashboardLayout from '@/components/layout/DashboardLayout';
 import { Calculator, ArrowRight, DollarSign, Calendar, Percent, ShieldCheck, Sparkles, TrendingUp, RefreshCw } from 'lucide-react';
-import { ScheduleItem } from '@/core/financing/types';
+import { ScheduleItem, CalculationMethod } from '@/core/financing/types';
+import { getCalcMethodLabel } from '@/core/financing/calculator';
 
 export default function CalculatorPage() {
   const router = useRouter();
@@ -13,7 +14,7 @@ export default function CalculatorPage() {
   const [principalAmount, setPrincipalAmount] = useState<number>(10000);
   const [profitRatePA, setProfitRatePA] = useState<number>(10);
   const [tenorMonths, setTenorMonths] = useState<number>(12);
-  const [calcMethod, setCalcMethod] = useState<'FLAT_RATE' | 'REDUCING_BALANCE'>('FLAT_RATE');
+  const [calcMethod, setCalcMethod] = useState<CalculationMethod>('FLAT_R78');
   const [startDate, setStartDate] = useState<string>(new Date().toISOString().split('T')[0]);
   const [processingFee, setProcessingFee] = useState<number>(150);
   const [stampDutyFee, setStampDutyFee] = useState<number>(50);
@@ -107,35 +108,64 @@ export default function CalculatorPage() {
             <div className="flex items-center justify-between pb-3 border-b border-slate-100">
               <h2 className="font-bold text-slate-900 text-sm uppercase tracking-wider">Simulation Parameters</h2>
               <span className="text-[10px] font-bold text-indigo-600 bg-indigo-50 px-2.5 py-1 rounded-full uppercase tracking-wider">
-                {calcMethod.replace('_', ' ')}
+                {getCalcMethodLabel(calcMethod)}
               </span>
             </div>
 
             {/* Method Toggle */}
             <div>
-              <label className="block text-xs font-bold text-slate-700 mb-1.5">Financing Model</label>
-              <div className="grid grid-cols-2 gap-2">
+              <label className="block text-xs font-bold text-slate-700 mb-2">Financing Calculation Model</label>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
                 <button
                   type="button"
-                  onClick={() => setCalcMethod('FLAT_RATE')}
-                  className={`py-2.5 text-xs font-bold rounded-xl border transition cursor-pointer ${
-                    calcMethod === 'FLAT_RATE'
-                      ? 'border-indigo-600 bg-indigo-600 text-white shadow-sm'
-                      : 'border-slate-200 text-slate-600 hover:bg-slate-50'
+                  onClick={() => setCalcMethod('FLAT_R78')}
+                  className={`p-3 text-left rounded-2xl border transition cursor-pointer flex flex-col justify-between ${
+                    calcMethod === 'FLAT_R78' || (calcMethod as string) === 'FLAT_RATE'
+                      ? 'border-indigo-600 bg-indigo-50/80 text-indigo-950 ring-2 ring-indigo-500/20 shadow-xs'
+                      : 'border-slate-200 text-slate-700 hover:bg-slate-50'
                   }`}
                 >
-                  Flat Rate (Hire Purchase)
+                  <div className="text-xs font-bold">Hire Purchase (R78)</div>
+                  <div className="text-[10px] text-slate-500 mt-1">Sum of Digits • HP Act 1967 standard</div>
                 </button>
+
                 <button
                   type="button"
-                  onClick={() => setCalcMethod('REDUCING_BALANCE')}
-                  className={`py-2.5 text-xs font-bold rounded-xl border transition cursor-pointer ${
-                    calcMethod === 'REDUCING_BALANCE'
-                      ? 'border-indigo-600 bg-indigo-600 text-white shadow-sm'
-                      : 'border-slate-200 text-slate-600 hover:bg-slate-50'
+                  onClick={() => setCalcMethod('FLAT_STRAIGHT')}
+                  className={`p-3 text-left rounded-2xl border transition cursor-pointer flex flex-col justify-between ${
+                    calcMethod === 'FLAT_STRAIGHT'
+                      ? 'border-indigo-600 bg-indigo-50/80 text-indigo-950 ring-2 ring-indigo-500/20 shadow-xs'
+                      : 'border-slate-200 text-slate-700 hover:bg-slate-50'
                   }`}
                 >
-                  Reducing Balance
+                  <div className="text-xs font-bold">Straight Flat Rate</div>
+                  <div className="text-[10px] text-slate-500 mt-1">Equal monthly profit &amp; principal</div>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => setCalcMethod('REDUCING_MONTHLY')}
+                  className={`p-3 text-left rounded-2xl border transition cursor-pointer flex flex-col justify-between ${
+                    calcMethod === 'REDUCING_MONTHLY' || (calcMethod as string) === 'REDUCING_BALANCE'
+                      ? 'border-indigo-600 bg-indigo-50/80 text-indigo-950 ring-2 ring-indigo-500/20 shadow-xs'
+                      : 'border-slate-200 text-slate-700 hover:bg-slate-50'
+                  }`}
+                >
+                  <div className="text-xs font-bold">Monthly Reducing</div>
+                  <div className="text-[10px] text-slate-500 mt-1">Amortized monthly rest balance</div>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => setCalcMethod('REDUCING_DAILY')}
+                  className={`p-3 text-left rounded-2xl border transition cursor-pointer flex flex-col justify-between ${
+                    calcMethod === 'REDUCING_DAILY'
+                      ? 'border-indigo-600 bg-indigo-50/80 text-indigo-950 ring-2 ring-indigo-500/20 shadow-xs'
+                      : 'border-slate-200 text-slate-700 hover:bg-slate-50'
+                  }`}
+                >
+                  <div className="text-xs font-bold">Daily Reducing</div>
+                  <div className="text-[10px] text-slate-500 mt-1">Exact calendar days rest (365 days)</div>
                 </button>
               </div>
             </div>

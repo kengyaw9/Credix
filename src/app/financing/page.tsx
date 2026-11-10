@@ -9,6 +9,7 @@ import {
 } from 'lucide-react';
 import { FinancingAccount } from '@/core/store/memory-store';
 import { RealTimeAccountStatus, FinancingStatus } from '@/core/financing/types';
+import { getCalcMethodLabel } from '@/core/financing/calculator';
 
 interface AccountWithRealtime extends FinancingAccount {
   customerName: string;
@@ -165,7 +166,7 @@ export default function FinancingListPage() {
                         </td>
                         <td className="p-4 text-xs text-slate-600">
                           <div className="font-semibold text-slate-800">{acc.tenorMonths} Mos @ {acc.profitRatePA}% p.a.</div>
-                          <div className="text-slate-400 capitalize">{acc.calcMethod.toLowerCase().replace('_', ' ')}</div>
+                          <div className="text-slate-500 font-medium">{getCalcMethodLabel(acc.calcMethod)}</div>
                         </td>
                         <td className="p-4 font-bold text-slate-800">
                           <span className="text-[11px] text-slate-400 font-normal mr-1">RM</span>

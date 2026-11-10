@@ -11,6 +11,7 @@ import {
 } from 'lucide-react';
 import { Customer, FinancingAccount, FinancingTransaction } from '@/core/store/memory-store';
 import { RealTimeAccountStatus, ScheduleItem, SettlementQuotation, FinancingStatus } from '@/core/financing/types';
+import { getCalcMethodLabel } from '@/core/financing/calculator';
 
 interface AccountDetail extends FinancingAccount {
   customer: Customer;
@@ -512,7 +513,7 @@ export default function FinancingDetailPage({ params }: { params: Promise<{ id: 
               <span className="text-xs text-slate-400 font-semibold mr-1">RM</span>
               {account.principalAmount.toLocaleString('en-MY', { minimumFractionDigits: 2 })}
             </div>
-            <div className="text-xs text-slate-500 mt-1">{account.tenorMonths} Mos @ {account.profitRatePA}% p.a.</div>
+            <div className="text-xs text-slate-500 mt-1">{account.tenorMonths} Mos @ {account.profitRatePA}% p.a. • <span className="font-semibold text-slate-700">{getCalcMethodLabel(account.calcMethod)}</span></div>
           </div>
 
           <div className="bg-white p-5 rounded-2xl border border-slate-200/90 shadow-2xs">

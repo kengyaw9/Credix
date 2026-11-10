@@ -6,7 +6,7 @@
  * needed for financing underwriting and collection.
  */
 
-import { ScheduleItem, FinancingStatus } from '../financing/types';
+import { ScheduleItem, FinancingStatus, CalculationMethod } from '../financing/types';
 
 export interface Tenant {
   id: string;
@@ -81,7 +81,7 @@ export interface FinancingAccount {
   tenantId: string;
   customerId: string;
   accountNo: string;
-  calcMethod: 'FLAT_RATE' | 'REDUCING_BALANCE';
+  calcMethod: CalculationMethod;
   principalAmount: number;
   profitRatePA: number;
   tenorMonths: number;
