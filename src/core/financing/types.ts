@@ -10,11 +10,15 @@ export type CalculationMethod = 'FLAT_RATE' | 'REDUCING_BALANCE';
 
 // Financing Account Lifecycle Status
 export type FinancingStatus = 
-  | 'DRAFT'      // Created, pending approval
-  | 'APPROVED'   // Approved, ready for disbursement
-  | 'ACTIVE'     // Disbursed and currently active
-  | 'SETTLED'    // Fully paid off / settled
-  | 'WRITTEN_OFF'; // Bad debt write-off
+  | 'PENDING_APPROVAL'   // Application submitted, pending credit underwriting
+  | 'APPROVED'           // Approved by credit underwriting / committee
+  | 'REJECTED'           // Rejected by underwriting
+  | 'ACCEPTED'           // Letter of Offer accepted by borrower
+  | 'READY_TO_DISBURSE'  // Pre-disbursement checks verified, ready for payout
+  | 'ACTIVE'             // Disbursed and active
+  | 'SETTLED'            // Fully paid off / early settled
+  | 'WRITTEN_OFF'        // Bad debt write-off
+  | 'DRAFT';             // Legacy draft status
 
 // Individual Installment Schedule Status
 export type InstallmentStatus = 'UNPAID' | 'PARTIAL' | 'PAID';

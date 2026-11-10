@@ -17,7 +17,8 @@ import {
   AlertCircle,
   Search,
   CheckCircle2,
-  TrendingUp
+  TrendingUp,
+  ShieldCheck
 } from 'lucide-react';
 import { Customer } from '@/core/store/memory-store';
 import { ScheduleItem } from '@/core/financing/types';
@@ -390,15 +391,22 @@ function NewFinancingContent() {
                 </div>
               </div>
 
-              <div>
-                <label className="block text-xs font-bold text-slate-700 mb-1.5">Disbursement / Start Date</label>
+              <div className="bg-slate-50/90 p-3.5 rounded-2xl border border-slate-200/80 space-y-2">
+                <div className="flex items-center justify-between">
+                  <label className="block text-xs font-bold text-slate-700">Estimated Target Start Date</label>
+                  <span className="text-[10px] text-amber-700 font-bold bg-amber-50 border border-amber-200 px-2 py-0.5 rounded-md">
+                    Indicative For Quotation
+                  </span>
+                </div>
                 <input
                   type="date"
-                  required
                   value={form.startDate}
                   onChange={e => setForm({ ...form, startDate: e.target.value })}
-                  className="w-full text-sm p-2.5 rounded-xl border border-slate-200 bg-slate-50/50 focus:bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                  className="w-full text-sm p-2 rounded-xl border border-slate-200 bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500 font-medium"
                 />
+                <p className="text-[11px] text-slate-500 leading-relaxed">
+                  Actual disbursement date and official repayment schedule will be generated only after underwriting approval, customer acceptance, and payout execution.
+                </p>
               </div>
 
               <button
@@ -406,7 +414,8 @@ function NewFinancingContent() {
                 disabled={submitting || !customer}
                 className="w-full mt-3 bg-indigo-600 hover:bg-indigo-500 active:bg-indigo-700 text-white font-bold text-xs py-3 rounded-xl shadow-md shadow-indigo-600/30 transition flex items-center justify-center space-x-2 disabled:opacity-50 cursor-pointer"
               >
-                <span>{submitting ? 'Creating Loan Facility...' : 'Submit Loan Application'}</span>
+                <ShieldCheck className="w-4 h-4" />
+                <span>{submitting ? 'Submitting Application...' : 'Submit Loan Application (For Approval)'}</span>
                 <ArrowRight className="w-4 h-4" />
               </button>
             </form>
@@ -467,7 +476,10 @@ function NewFinancingContent() {
           {/* Schedule Table */}
           <div className="bg-white rounded-3xl border border-slate-200/90 shadow-2xs overflow-hidden">
             <div className="p-4 border-b border-slate-100 flex justify-between items-center bg-slate-50/50">
-              <h2 className="font-bold text-slate-900 text-sm">Amortization Schedule Breakdown</h2>
+              <div>
+                <h2 className="font-bold text-slate-900 text-sm">Amortization Schedule Breakdown</h2>
+                <p className="text-[10px] text-slate-400">Indicative estimate • Official due dates calculated upon disbursement</p>
+              </div>
               <span className="text-xs text-slate-500 font-mono">
                 {previewSchedule?.length || 0} Installments
               </span>

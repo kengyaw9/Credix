@@ -1,5 +1,6 @@
 import { NextRequest } from 'next/server';
 import { pgDb } from '@/core/store/db-store';
+import { calculateFinancingSchedule } from '@/core/financing/calculator';
 import { getTenantIdFromRequest, apiSuccess, apiError } from '@/lib/api-helpers';
 
 export async function POST(
@@ -19,19 +20,35 @@ export async function POST(
       return apiError(`Cannot disburse account with status: ${account.status}`);
     }
 
+    // Must be at least approved or accepted
+    if (account.status === 'REJECTED') {
+      return apiError('Cannot disburse a rejected loan application');
+    }
+
     const body = await req.json().catch(() => ({}));
-    const payoutRef = body.payoutRef || `TRF-${Date.now()}`;
+    const payoutRef = body.payoutRef || `TRF-${Date.now().toString().slice(-6)}`;
     const paymentMethod = body.paymentMethod || 'BANK_TRANSFER';
-    const disbursedAt = body.disbursedAt || new Date().toISOString();
+    const rawDisbursedAt = body.disbursedAt || new Date().toISOString().split('T')[0];
+    const disbursedDateStr = rawDisbursedAt.includes('T') ? rawDisbursedAt.split('T')[0] : rawDisbursedAt;
 
     const netDisbursed = account.principalAmount - (account.processingFee || 0) - (account.stampDutyFee || 0);
 
-    // Update account
+    // CRITICAL: Now that actual disbursement date is known, recalculate official repayment schedule!
+    const officialScheduleResult = calculateFinancingSchedule({
+      principalAmount: account.principalAmount,
+      profitRatePA: account.profitRatePA,
+      tenorMonths: account.tenorMonths,
+      startDate: disbursedDateStr,
+      calcMethod: account.calcMethod,
+    });
+
+    // Update account with ACTIVE status, official schedule, and payout timestamps
     const updated = await pgDb.updateAccount(tenantId, id, {
       status: 'ACTIVE',
       disbursedAmount: netDisbursed,
-      disbursedAt,
+      disbursedAt: new Date(disbursedDateStr).toISOString(),
       payoutRef,
+      schedule: officialScheduleResult.schedule,
     });
 
     // Record upfront fee charges in ledger if applicable
@@ -79,7 +96,10 @@ export async function POST(
       remarks: `Loan Capital Drawdown disbursed to customer bank account (Gross RM ${account.principalAmount.toFixed(2)} minus fees)`,
     });
 
-    return apiSuccess(updated);
+    return apiSuccess({
+      account: updated,
+      message: `Disbursement completed on ${disbursedDateStr}. Repayment schedule activated.`,
+    });
   } catch (err: unknown) {
     const errorMessage = err instanceof Error ? err.message : 'Disbursement failed';
     return apiError(errorMessage, 500);

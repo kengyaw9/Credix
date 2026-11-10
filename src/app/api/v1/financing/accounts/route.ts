@@ -67,7 +67,7 @@ export async function POST(req: NextRequest) {
       lateFeeRatePA: body.lateFeeRatePA ? Number(body.lateFeeRatePA) : 1.0,
       processingFee: body.processingFee ? Number(body.processingFee) : 0,
       stampDutyFee: body.stampDutyFee ? Number(body.stampDutyFee) : 0,
-      status: 'DRAFT',
+      status: 'PENDING_APPROVAL',
       schedule: calcResult.schedule,
     });
 

@@ -76,6 +76,10 @@ function mapAccountRow(row: any): FinancingAccount {
     disbursedAmount: row.disbursed_amount ? Number(row.disbursed_amount) : undefined,
     disbursedAt: row.disbursed_at ? new Date(row.disbursed_at).toISOString() : undefined,
     payoutRef: row.payout_ref || undefined,
+    approvedAt: row.approved_at ? new Date(row.approved_at).toISOString() : undefined,
+    approvedBy: row.approved_by || undefined,
+    acceptedAt: row.accepted_at ? new Date(row.accepted_at).toISOString() : undefined,
+    rejectionReason: row.rejection_reason || undefined,
     status: row.status,
     schedule: typeof row.schedule === 'string' ? JSON.parse(row.schedule) : (row.schedule || []),
     createdAt: row.created_at ? new Date(row.created_at).toISOString() : new Date().toISOString(),
@@ -243,14 +247,16 @@ export class PostgresStore {
         tenant_id, customer_id, account_no, calc_method, principal_amount,
         profit_rate_pa, tenor_months, total_profit, total_payable, monthly_installment,
         late_fee_rate_pa, processing_fee, stamp_duty_fee, disbursed_amount, disbursed_at,
-        payout_ref, status, schedule
+        payout_ref, approved_at, approved_by, accepted_at, rejection_reason, status, schedule
       )
       VALUES (
         ${tenantId}, ${acc.customerId}, ${acc.accountNo}, ${acc.calcMethod}, ${acc.principalAmount},
         ${acc.profitRatePA}, ${acc.tenorMonths}, ${acc.totalProfit}, ${acc.totalPayable}, ${acc.monthlyInstallment},
         ${acc.lateFeeRatePA || 1.0}, ${acc.processingFee || 0}, ${acc.stampDutyFee || 0}, 
         ${acc.disbursedAmount || null}, ${acc.disbursedAt ? new Date(acc.disbursedAt) : null}, 
-        ${acc.payoutRef || null}, ${acc.status}, ${JSON.stringify(acc.schedule)}::jsonb
+        ${acc.payoutRef || null}, ${acc.approvedAt ? new Date(acc.approvedAt) : null},
+        ${acc.approvedBy || null}, ${acc.acceptedAt ? new Date(acc.acceptedAt) : null},
+        ${acc.rejectionReason || null}, ${acc.status}, ${JSON.stringify(acc.schedule)}::jsonb
       )
       RETURNING *
     `;
@@ -276,6 +282,10 @@ export class PostgresStore {
         disbursed_amount = ${merged.disbursedAmount ?? null},
         disbursed_at = ${merged.disbursedAt ? new Date(merged.disbursedAt) : null},
         payout_ref = ${merged.payoutRef ?? null},
+        approved_at = ${merged.approvedAt ? new Date(merged.approvedAt) : null},
+        approved_by = ${merged.approvedBy ?? null},
+        accepted_at = ${merged.acceptedAt ? new Date(merged.acceptedAt) : null},
+        rejection_reason = ${merged.rejectionReason ?? null},
         schedule = ${JSON.stringify(merged.schedule)}::jsonb,
         updated_at = NOW()
       WHERE tenant_id = ${tenantId} AND id = ${id}

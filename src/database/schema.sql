@@ -115,7 +115,12 @@ CREATE TABLE IF NOT EXISTS financing_accounts (
     disbursed_at TIMESTAMPTZ,
     payout_ref VARCHAR(100),
     
-    status VARCHAR(20) DEFAULT 'DRAFT',     -- DRAFT, ACTIVE, SETTLED, WRITTEN_OFF
+    approved_at TIMESTAMPTZ,
+    approved_by VARCHAR(255),
+    accepted_at TIMESTAMPTZ,
+    rejection_reason TEXT,
+    
+    status VARCHAR(50) DEFAULT 'PENDING_APPROVAL',     -- PENDING_APPROVAL, APPROVED, ACCEPTED, READY_TO_DISBURSE, ACTIVE, REJECTED, SETTLED, WRITTEN_OFF
     created_at TIMESTAMPTZ DEFAULT NOW(),
     updated_at TIMESTAMPTZ DEFAULT NOW(),
     UNIQUE (tenant_id, account_no)

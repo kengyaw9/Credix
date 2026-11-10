@@ -6,7 +6,7 @@
  * needed for financing underwriting and collection.
  */
 
-import { ScheduleItem } from '../financing/types';
+import { ScheduleItem, FinancingStatus } from '../financing/types';
 
 export interface Tenant {
   id: string;
@@ -94,7 +94,11 @@ export interface FinancingAccount {
   disbursedAmount?: number;
   disbursedAt?: string;
   payoutRef?: string;
-  status: 'DRAFT' | 'ACTIVE' | 'SETTLED' | 'WRITTEN_OFF';
+  approvedAt?: string;
+  approvedBy?: string;
+  acceptedAt?: string;
+  rejectionReason?: string;
+  status: FinancingStatus;
   schedule: ScheduleItem[];
   createdAt: string;
 }
