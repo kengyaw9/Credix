@@ -1012,7 +1012,7 @@ export default function FinancingDetailPage({ params }: { params: Promise<{ id: 
                 className="w-full text-sm p-2.5 rounded-xl border border-slate-200 bg-slate-50/50 focus:bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
               />
               <p className="text-[11px] text-slate-500 mt-1">
-                Official repayment schedule will start calculating exactly from this date.
+                Official repayment schedule follows monthly <strong>Anniversary Date</strong> (installments due on the same day each month, starting 1 month after disbursement).
               </p>
             </div>
 

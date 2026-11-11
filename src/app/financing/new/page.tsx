@@ -439,7 +439,7 @@ function NewFinancingContent() {
                   className="w-full text-sm p-2 rounded-xl border border-slate-200 bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500 font-medium"
                 />
                 <p className="text-[11px] text-slate-500 leading-relaxed">
-                  Actual disbursement date and official repayment schedule will be generated only after underwriting approval, customer acceptance, and payout execution.
+                  Repayment follows the monthly <strong>Anniversary Date</strong> (1 month after drawdown). Official schedule will be activated upon disbursement.
                 </p>
               </div>
 
