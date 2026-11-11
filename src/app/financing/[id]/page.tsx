@@ -613,35 +613,121 @@ export default function FinancingDetailPage({ params }: { params: Promise<{ id: 
                 <thead className="bg-slate-50/90 text-slate-500 uppercase font-bold border-b border-slate-200/80">
                   <tr>
                     <th className="p-4">#</th>
-                    <th className="p-4">Due Date</th>
+                    <th className="p-4">Due Date &amp; Timing</th>
                     <th className="p-4">Principal Due</th>
                     <th className="p-4">Profit Due</th>
-                    <th className="p-4">Total Installment</th>
-                    <th className="p-4">Ending Balance</th>
-                    <th className="p-4">Status</th>
+                    <th className="p-4">Total Billed</th>
+                    <th className="p-4">Paid to Date</th>
+                    <th className="p-4">Remaining Due</th>
+                    <th className="p-4">Ending Principal</th>
+                    <th className="p-4 text-center">Status</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100">
                   {account.schedule?.map(item => {
                     const isPaid = item.status === 'PAID';
                     const isPartial = item.status === 'PARTIAL';
+
+                    const principalPaid = Number(item.principalPaid || 0);
+                    const profitPaid = Number(item.profitPaid || 0);
+                    const totalPaid = principalPaid + profitPaid;
+                    const remainingDue = Math.max(0, item.totalDue - totalPaid);
+
+                    // Today vs Due Date calculation
+                    const todayStr = new Date().toISOString().split('T')[0];
+                    const isPastDue = item.dueDate < todayStr;
+                    const isDueToday = item.dueDate === todayStr;
+
+                    const d1 = new Date(item.dueDate + 'T00:00:00Z').getTime();
+                    const d2 = new Date(todayStr + 'T00:00:00Z').getTime();
+                    const diffDays = Math.round(Math.abs(d2 - d1) / (1000 * 60 * 60 * 24));
+
                     return (
-                      <tr key={item.installmentNo} className={isPaid ? 'bg-slate-50/40 text-slate-400' : 'hover:bg-slate-50/60'}>
+                      <tr 
+                        key={item.installmentNo} 
+                        className={`transition ${
+                          isPaid 
+                            ? 'bg-slate-50/40 text-slate-400' 
+                            : isPastDue 
+                            ? 'bg-rose-50/30 hover:bg-rose-50/60' 
+                            : isDueToday 
+                            ? 'bg-amber-50/30 hover:bg-amber-50/60'
+                            : 'hover:bg-slate-50/60'
+                        }`}
+                      >
                         <td className="p-4 font-bold text-slate-700">#{item.installmentNo}</td>
-                        <td className="p-4 font-mono font-semibold">{item.dueDate}</td>
-                        <td className="p-4">RM {item.principalDue.toFixed(2)}</td>
-                        <td className="p-4 text-indigo-600 font-semibold">RM {item.profitDue.toFixed(2)}</td>
-                        <td className="p-4 font-extrabold text-slate-900">RM {item.totalDue.toFixed(2)}</td>
-                        <td className="p-4 text-slate-500 font-mono">RM {item.endingBalance.toFixed(2)}</td>
                         <td className="p-4">
-                          <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-bold ${
+                          <div className="font-mono font-bold text-slate-900">{item.dueDate}</div>
+                          <div className="mt-0.5">
+                            {isPaid ? (
+                              <span className="inline-flex items-center text-[10px] text-emerald-600 font-semibold">
+                                ✓ Settled
+                              </span>
+                            ) : isDueToday ? (
+                              <span className="inline-flex items-center text-[10px] font-bold text-amber-700 bg-amber-100/90 px-1.5 py-0.5 rounded animate-pulse">
+                                ⚡ Due Today
+                              </span>
+                            ) : isPastDue ? (
+                              <span className="inline-flex items-center text-[10px] font-bold text-rose-700 bg-rose-100/90 px-1.5 py-0.5 rounded">
+                                ⚠️ Overdue ({diffDays} DPD)
+                              </span>
+                            ) : (
+                              <span className="inline-flex items-center text-[10px] text-slate-500 font-medium">
+                                In {diffDays} days
+                              </span>
+                            )}
+                          </div>
+                        </td>
+                        <td className="p-4 font-medium">RM {item.principalDue.toFixed(2)}</td>
+                        <td className="p-4 text-indigo-600 font-medium">RM {item.profitDue.toFixed(2)}</td>
+                        <td className="p-4 font-extrabold text-slate-900">RM {item.totalDue.toFixed(2)}</td>
+                        
+                        {/* Paid to Date Column */}
+                        <td className="p-4">
+                          {totalPaid > 0 ? (
+                            <div>
+                              <span className="font-mono font-bold text-emerald-700">
+                                RM {totalPaid.toFixed(2)}
+                              </span>
+                              <div className="text-[10px] text-slate-400">
+                                Prin: RM {principalPaid.toFixed(2)} • Prof: RM {profitPaid.toFixed(2)}
+                              </div>
+                            </div>
+                          ) : (
+                            <span className="font-mono text-slate-300">RM 0.00</span>
+                          )}
+                        </td>
+
+                        {/* Remaining Due Column */}
+                        <td className="p-4">
+                          {remainingDue > 0 ? (
+                            <div>
+                              <span className={`font-mono font-extrabold ${
+                                isPastDue ? 'text-rose-600' : isPartial ? 'text-amber-700' : 'text-slate-900'
+                              }`}>
+                                RM {remainingDue.toFixed(2)}
+                              </span>
+                              {isPartial && (
+                                <div className="text-[10px] text-amber-600 font-semibold">Partially settled</div>
+                              )}
+                            </div>
+                          ) : (
+                            <span className="font-mono text-emerald-600 font-bold">RM 0.00</span>
+                          )}
+                        </td>
+
+                        <td className="p-4 text-slate-500 font-mono">RM {item.endingBalance.toFixed(2)}</td>
+                        <td className="p-4 text-center">
+                          <span className={`px-2.5 py-1 rounded-full text-[10px] font-bold inline-block ${
                             isPaid
                               ? 'bg-emerald-50 text-emerald-700 border border-emerald-200'
                               : isPartial
-                              ? 'bg-amber-50 text-amber-700 border border-amber-200'
+                              ? 'bg-amber-50 text-amber-800 border border-amber-300 font-extrabold'
+                              : isPastDue
+                              ? 'bg-rose-50 text-rose-700 border border-rose-200 font-extrabold'
                               : 'bg-slate-100 text-slate-600'
                           }`}>
-                            {item.status}
+                            {isPaid ? 'PAID' : isPartial ? 'PARTIAL' : isPastDue ? 'OVERDUE' : 'UNPAID'}
                           </span>
                         </td>
                       </tr>
