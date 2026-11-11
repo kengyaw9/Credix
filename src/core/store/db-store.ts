@@ -237,6 +237,25 @@ export class PostgresStore {
     return rows.map(mapAccountRow);
   }
 
+  public async getNextAccountSequence(tenantId: string): Promise<number> {
+    const sql = getSql();
+    const rows = await sql`
+      SELECT account_no FROM financing_accounts WHERE tenant_id = ${tenantId}
+    `;
+    let maxSeq = 0;
+    for (const r of rows) {
+      const match = r.account_no?.match(/^\d{3}-\d{2}-(\d{6})-\d{1}$/);
+      if (match) {
+        const seq = parseInt(match[1], 10);
+        if (seq > maxSeq) maxSeq = seq;
+      }
+    }
+    if (maxSeq > 0) {
+      return maxSeq + 1;
+    }
+    return rows.length + 1;
+  }
+
   public async addAccount(
     tenantId: string, 
     acc: Omit<FinancingAccount, 'id' | 'tenantId' | 'createdAt'>

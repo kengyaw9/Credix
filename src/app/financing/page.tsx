@@ -152,7 +152,7 @@ export default function FinancingListPage() {
                       <tr key={acc.id} className="hover:bg-slate-50/80 transition">
                         <td className="p-4">
                           <div>
-                            <Link href={`/financing/${acc.id}`} className="font-bold text-slate-900 hover:text-indigo-600 transition block text-sm">
+                            <Link href={`/financing/${acc.id}`} className="font-bold font-mono tracking-wide text-slate-900 hover:text-indigo-600 transition block text-sm">
                               {acc.accountNo}
                             </Link>
                             <div className="text-xs text-slate-500 font-medium">

@@ -2,6 +2,7 @@ import { NextRequest } from 'next/server';
 import { pgDb } from '@/core/store/db-store';
 import { calculateFinancingSchedule } from '@/core/financing/calculator';
 import { evaluateRealTimeAccountStatus } from '@/core/financing/due-tracker';
+import { generateUltronAccountNo, getTenantInstituteCode } from '@/core/financing/account-number';
 import { getTenantIdFromRequest, apiSuccess, apiError } from '@/lib/api-helpers';
 
 export async function GET(req: NextRequest) {
@@ -50,9 +51,14 @@ export async function POST(req: NextRequest) {
     });
 
     const tenant = await pgDb.getTenantById(tenantId);
-    const prefix = tenant ? tenant.code.substring(0, 3) : 'FIN';
-    const randomSeq = Math.floor(1000 + Math.random() * 9000);
-    const accountNo = `${prefix}-${new Date().getFullYear()}-${randomSeq}`;
+    const instituteCode = getTenantInstituteCode(tenant ? tenant.code : tenantId);
+    const productCode = body.productCode || (body.calcMethod === 'FLAT_R78' ? '20' : '10');
+    const nextSeq = await pgDb.getNextAccountSequence(tenantId);
+    const { formattedAccountNo: accountNo } = generateUltronAccountNo({
+      instituteCode,
+      productCode,
+      sequenceNo: nextSeq,
+    });
 
     const newAccount = await pgDb.addAccount(tenantId, {
       customerId: body.customerId,

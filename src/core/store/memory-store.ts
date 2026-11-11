@@ -349,7 +349,7 @@ class MultiTenantDatabase {
       id: 'acc-101',
       tenantId: '11111111-1111-1111-1111-111111111111',
       customerId: 'cust-101',
-      accountNo: 'APX-2026-0001',
+      accountNo: '101-10-000001-4',
       calcMethod: 'FLAT_RATE',
       principalAmount: 5000,
       profitRatePA: 10,
@@ -409,7 +409,7 @@ class MultiTenantDatabase {
       id: 'acc-201',
       tenantId: '22222222-2222-2222-2222-222222222222',
       customerId: 'cust-201',
-      accountNo: 'MM-2026-0001',
+      accountNo: '102-10-000001-1',
       calcMethod: 'FLAT_RATE',
       principalAmount: 10000,
       profitRatePA: 12,
@@ -596,6 +596,20 @@ class MultiTenantDatabase {
 
   public getAccountById(tenantId: string, id: string): FinancingAccount | undefined {
     return this.accounts.find(a => a.tenantId === tenantId && a.id === id);
+  }
+
+  public getNextAccountSequence(tenantId: string): number {
+    const tenantAccounts = this.accounts.filter(a => a.tenantId === tenantId);
+    let maxSeq = 0;
+    for (const a of tenantAccounts) {
+      const match = a.accountNo?.match(/^\d{3}-\d{2}-(\d{6})-\d{1}$/);
+      if (match) {
+        const seq = parseInt(match[1], 10);
+        if (seq > maxSeq) maxSeq = seq;
+      }
+    }
+    if (maxSeq > 0) return maxSeq + 1;
+    return tenantAccounts.length + 1;
   }
 
   public addAccount(tenantId: string, accountData: Omit<FinancingAccount, 'id' | 'tenantId' | 'createdAt'>): FinancingAccount {

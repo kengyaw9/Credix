@@ -267,7 +267,7 @@ export default function FinancingDetailPage({ params }: { params: Promise<{ id: 
             </Link>
             <div>
               <div className="flex items-center space-x-2.5">
-                <h1 className="text-2xl font-extrabold text-slate-900 tracking-tight">{account.accountNo}</h1>
+                <h1 className="text-2xl font-extrabold font-mono tracking-tight text-slate-900">{account.accountNo}</h1>
                 <span className={`px-3 py-1 rounded-full text-xs font-bold ${
                   isActive
                     ? 'bg-emerald-50 text-emerald-700 border border-emerald-200'

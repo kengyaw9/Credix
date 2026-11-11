@@ -332,7 +332,7 @@ export default function CustomerDetailPage({ params }: { params: Promise<{ id: s
                     const rt = acc.realtimeStatus;
                     return (
                       <tr key={acc.id} className="hover:bg-slate-50 transition">
-                        <td className="p-4 font-bold text-slate-900">{acc.accountNo}</td>
+                        <td className="p-4 font-bold font-mono text-slate-900">{acc.accountNo}</td>
                         <td className="p-4 font-bold text-slate-800">
                           <span className="text-[11px] text-slate-400 font-normal mr-1">RM</span>
                           {acc.principalAmount.toLocaleString('en-MY', { minimumFractionDigits: 2 })}
