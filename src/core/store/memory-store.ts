@@ -457,7 +457,7 @@ class MultiTenantDatabase {
         excessAmount: 0,
         paymentMethod: 'DEDUCTION',
         referenceNo: 'FEE-STAMP-88912',
-        remarks: 'Inland Revenue Board Stamp Duty (Deducted upfront)',
+        remarks: 'Stamp Duty (Deducted upfront)',
         transactedAt: '2026-01-01T08:52:00Z',
       },
       {

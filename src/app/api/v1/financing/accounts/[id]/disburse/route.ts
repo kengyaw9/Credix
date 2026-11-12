@@ -78,7 +78,7 @@ export async function POST(
         excessAmount: 0,
         paymentMethod: 'DEDUCTION',
         referenceNo: `FEE-STAMP-${Date.now().toString().slice(-6)}`,
-        remarks: 'Inland Revenue Board Stamp Duty (Deducted upfront)',
+        remarks: 'Stamp Duty (Deducted upfront)',
       });
     }
 

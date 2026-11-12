@@ -48,6 +48,8 @@ export default function FinancingDetailPage({ params }: { params: Promise<{ id: 
   const [isPaymentOpen, setIsPaymentOpen] = useState(false);
   const [paymentAmount, setPaymentAmount] = useState('');
   const [paymentDate, setPaymentDate] = useState(getTodayMYT());
+  const [repaymentMethod, setRepaymentMethod] = useState('BANK_TRANSFER');
+  const [repaymentRef, setRepaymentRef] = useState('');
   const [allocationMode, setAllocationMode] = useState<PaymentAllocationMode>('WATERFALL');
   const [paymentMsg, setPaymentMsg] = useState<string | null>(null);
 
@@ -143,6 +145,8 @@ export default function FinancingDetailPage({ params }: { params: Promise<{ id: 
         body: JSON.stringify({
           amount: Number(paymentAmount),
           paymentDate,
+          paymentMethod: repaymentMethod,
+          ...(repaymentRef.trim() ? { referenceNo: repaymentRef.trim() } : {}),
           allocationMode,
         }),
       });
@@ -161,6 +165,8 @@ export default function FinancingDetailPage({ params }: { params: Promise<{ id: 
           setIsPaymentOpen(false);
           setPaymentMsg(null);
           setPaymentAmount('');
+          setRepaymentMethod('BANK_TRANSFER');
+          setRepaymentRef('');
           setAllocationMode('WATERFALL');
         }, 3000);
       } else {
@@ -819,6 +825,11 @@ export default function FinancingDetailPage({ params }: { params: Promise<{ id: 
                         <div className="flex items-center space-x-2">
                           <span className="font-bold text-xs text-slate-900">{tx.txType.replace('_', ' ')}</span>
                           <span className="font-mono text-[10px] bg-slate-100 text-slate-600 px-2 py-0.5 rounded">{tx.referenceNo}</span>
+                          {tx.paymentMethod && (
+                            <span className="text-[10px] font-medium bg-indigo-50 text-indigo-700 px-2 py-0.5 rounded">
+                              {tx.paymentMethod.replace(/_/g, ' ')}
+                            </span>
+                          )}
                         </div>
                         <p className="text-xs text-slate-500 mt-0.5">{tx.remarks || tx.paymentMethod}</p>
                         <span className="text-[10px] text-slate-400">{new Date(tx.transactedAt).toLocaleString()}</span>
@@ -1263,6 +1274,34 @@ export default function FinancingDetailPage({ params }: { params: Promise<{ id: 
                     value={paymentDate}
                     onChange={e => setPaymentDate(e.target.value)}
                     className="w-full text-sm p-2.5 rounded-xl border border-slate-200 bg-slate-50/50 focus:bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-xs font-bold text-slate-700 mb-1.5">Payment Channel</label>
+                  <select
+                    value={repaymentMethod}
+                    onChange={e => setRepaymentMethod(e.target.value)}
+                    className="w-full text-xs p-2.5 rounded-xl border border-slate-200 bg-slate-50/50 focus:bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                  >
+                    <option value="BANK_TRANSFER">Bank Transfer (IBG / Rentas)</option>
+                    <option value="JOMPAY">JomPay</option>
+                    <option value="FPX_ONLINE">FPX Online Banking</option>
+                    <option value="DUITNOW">DuitNow</option>
+                    <option value="CASH">Cash (Branch Counter)</option>
+                    <option value="CHEQUE">Cheque</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-xs font-bold text-slate-700 mb-1.5">Ref / Receipt No (Optional)</label>
+                  <input
+                    type="text"
+                    value={repaymentRef}
+                    onChange={e => setRepaymentRef(e.target.value)}
+                    placeholder="e.g. JOMPAY-8812 / Cash Receipt"
+                    className="w-full text-xs p-2.5 rounded-xl border border-slate-200 bg-slate-50/50 focus:bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
                   />
                 </div>
               </div>

@@ -20,6 +20,19 @@ export async function GET(req: NextRequest) {
     const sql = neon(connectionString);
     const action = req.nextUrl.searchParams.get('action');
 
+    if (action === 'simplify-stamp-duty') {
+      const updatedRows = await sql`
+        UPDATE financing_transactions
+        SET remarks = 'Stamp Duty (Deducted upfront)'
+        WHERE remarks = 'Inland Revenue Board Stamp Duty (Deducted upfront)'
+        RETURNING id, reference_no, remarks
+      `;
+      return apiSuccess({
+        updatedCount: updatedRows.length,
+        updated: updatedRows,
+      });
+    }
+
     if (action === 'repair-crystallize') {
       const targetRows = await sql`
         SELECT id, tenant_id, account_no, late_fee_rate_pa, schedule
