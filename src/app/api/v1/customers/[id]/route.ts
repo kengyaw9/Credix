@@ -15,10 +15,18 @@ export async function GET(
     return apiError('Customer not found', 404);
   }
 
-  const rawAccounts = await pgDb.getAccountsByCustomer(tenantId, id);
+  const [rawAccounts, paidLateFeesMap] = await Promise.all([
+    pgDb.getAccountsByCustomer(tenantId, id),
+    pgDb.getPaidLateFeesMap(tenantId),
+  ]);
   const accounts = rawAccounts.map(acc => ({
     ...acc,
-    realtimeStatus: evaluateRealTimeAccountStatus(acc.schedule, acc.lateFeeRatePA),
+    realtimeStatus: evaluateRealTimeAccountStatus(
+      acc.schedule,
+      acc.lateFeeRatePA,
+      undefined,
+      paidLateFeesMap[acc.id] || 0
+    ),
   }));
 
   return apiSuccess({

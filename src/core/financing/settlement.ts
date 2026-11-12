@@ -12,12 +12,13 @@ import { evaluateRealTimeAccountStatus } from './due-tracker';
 export function calculateEarlySettlementQuote(
   schedule: ScheduleItem[],
   lateFeeRatePA: number = 1.0,
-  settlementDateStr?: string
+  settlementDateStr?: string,
+  paidLateFee: number = 0
 ): SettlementQuotation {
   const asOfDate = settlementDateStr ?? new Date().toISOString().split('T')[0];
 
   // 1. Get real-time status as of today
-  const status = evaluateRealTimeAccountStatus(schedule, lateFeeRatePA, asOfDate);
+  const status = evaluateRealTimeAccountStatus(schedule, lateFeeRatePA, asOfDate, paidLateFee);
 
   let totalRemainingPrincipal = new Decimal(0);
   let totalUnearnedFutureProfit = new Decimal(0);

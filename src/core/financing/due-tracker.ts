@@ -28,7 +28,8 @@ export function getDaysDifference(fromDateStr: string, toDateStr: string): numbe
 export function evaluateRealTimeAccountStatus(
   schedule: ScheduleItem[],
   lateFeeRatePA: number = 1.0,
-  asOfDate?: string
+  asOfDate?: string,
+  paidLateFee: number = 0
 ): RealTimeAccountStatus {
   const today = asOfDate ?? new Date().toISOString().split('T')[0];
 
@@ -84,17 +85,18 @@ export function evaluateRealTimeAccountStatus(
     }
   }
 
+  const totalArrearsDue = overduePrincipal.plus(overdueProfit);
+  const netAccruedLateFee = Decimal.max(0, new Decimal(roundCurrency(totalAccruedLateFee)).minus(paidLateFee));
+
   // Determine overall status
   let accountStatus: 'CURRENT' | 'DUE' | 'OVERDUE' | 'SETTLED' = 'CURRENT';
-  if (allInstallmentsPaid) {
+  if (allInstallmentsPaid && netAccruedLateFee.lessThanOrEqualTo(0)) {
     accountStatus = 'SETTLED';
   } else if (overdueInstallmentsCount > 0) {
     accountStatus = 'OVERDUE';
-  } else if (schedule.some(s => s.dueDate === today && s.status !== 'PAID')) {
+  } else if (netAccruedLateFee.greaterThan(0) || schedule.some(s => s.dueDate === today && s.status !== 'PAID')) {
     accountStatus = 'DUE';
   }
-
-  const totalArrearsDue = overduePrincipal.plus(overdueProfit);
 
   return {
     asOfDate: today,
@@ -104,7 +106,7 @@ export function evaluateRealTimeAccountStatus(
     overduePrincipal: roundCurrency(overduePrincipal),
     overdueProfit: roundCurrency(overdueProfit),
     totalArrearsDue: roundCurrency(totalArrearsDue),
-    accruedLateFee: roundCurrency(totalAccruedLateFee),
+    accruedLateFee: roundCurrency(netAccruedLateFee),
     nextDueInstallment,
     totalOutstandingBalance: roundCurrency(totalOutstandingPrincipal),
   };

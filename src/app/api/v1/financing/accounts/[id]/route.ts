@@ -17,7 +17,8 @@ export async function GET(
 
   const customer = await pgDb.getCustomerById(tenantId, account.customerId);
   const transactions = await pgDb.getTransactions(tenantId, account.id);
-  const realtimeStatus = evaluateRealTimeAccountStatus(account.schedule, account.lateFeeRatePA);
+  const paidLateFee = transactions.reduce((sum, tx) => sum + (tx.allocatedLateFee || 0), 0);
+  const realtimeStatus = evaluateRealTimeAccountStatus(account.schedule, account.lateFeeRatePA, undefined, paidLateFee);
 
   return apiSuccess({
     ...account,

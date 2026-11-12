@@ -7,14 +7,18 @@ import { getTenantIdFromRequest, apiSuccess, apiError } from '@/lib/api-helpers'
 
 export async function GET(req: NextRequest) {
   const tenantId = getTenantIdFromRequest(req);
-  const accounts = await pgDb.getAccounts(tenantId);
-  const customers = await pgDb.getCustomers(tenantId);
+  const [accounts, customers, paidLateFeesMap] = await Promise.all([
+    pgDb.getAccounts(tenantId),
+    pgDb.getCustomers(tenantId),
+    pgDb.getPaidLateFeesMap(tenantId),
+  ]);
   const customerMap = new Map(customers.map(c => [c.id, c]));
 
   // Augment each account with its dynamic real-time status
   const accountsWithRealtimeStatus = accounts.map(acc => {
     const customer = customerMap.get(acc.customerId);
-    const realtimeStatus = evaluateRealTimeAccountStatus(acc.schedule, acc.lateFeeRatePA);
+    const paidLateFee = paidLateFeesMap[acc.id] || 0;
+    const realtimeStatus = evaluateRealTimeAccountStatus(acc.schedule, acc.lateFeeRatePA, undefined, paidLateFee);
     return {
       ...acc,
       customerName: customer ? customer.fullName : 'Unknown',

@@ -18,7 +18,8 @@ export async function GET(
   const searchParams = req.nextUrl.searchParams;
   const asOfDate = searchParams.get('asOfDate') || new Date().toISOString().split('T')[0];
 
-  const quotation = calculateEarlySettlementQuote(account.schedule, account.lateFeeRatePA, asOfDate);
+  const paidLateFeesMap = await pgDb.getPaidLateFeesMap(tenantId, id);
+  const quotation = calculateEarlySettlementQuote(account.schedule, account.lateFeeRatePA, asOfDate, paidLateFeesMap[id] || 0);
   const customer = await pgDb.getCustomerById(tenantId, account.customerId);
 
   return apiSuccess({
@@ -47,7 +48,8 @@ export async function POST(
 
     const body = await req.json().catch(() => ({}));
     const settlementDate = body.settlementDate || new Date().toISOString().split('T')[0];
-    const quote = calculateEarlySettlementQuote(account.schedule, account.lateFeeRatePA, settlementDate);
+    const paidLateFeesMap = await pgDb.getPaidLateFeesMap(tenantId, id);
+    const quote = calculateEarlySettlementQuote(account.schedule, account.lateFeeRatePA, settlementDate, paidLateFeesMap[id] || 0);
 
     // Mark all remaining installments as PAID under settlement
     const settledSchedule = account.schedule.map(item => ({

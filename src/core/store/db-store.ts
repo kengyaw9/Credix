@@ -351,6 +351,28 @@ export class PostgresStore {
         `;
     return rows.map(mapTransactionRow);
   }
+
+  public async getPaidLateFeesMap(tenantId: string, financingId?: string): Promise<Record<string, number>> {
+    const sql = getSql();
+    const rows = financingId
+      ? await sql`
+          SELECT financing_id, COALESCE(SUM(allocated_late_fee), 0) AS total_paid
+          FROM financing_transactions
+          WHERE tenant_id = ${tenantId} AND financing_id = ${financingId}
+          GROUP BY financing_id
+        `
+      : await sql`
+          SELECT financing_id, COALESCE(SUM(allocated_late_fee), 0) AS total_paid
+          FROM financing_transactions
+          WHERE tenant_id = ${tenantId}
+          GROUP BY financing_id
+        `;
+    const map: Record<string, number> = {};
+    for (const r of rows) {
+      map[r.financing_id] = Number(r.total_paid || 0);
+    }
+    return map;
+  }
 }
 
 export const pgDb = new PostgresStore();

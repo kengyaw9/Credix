@@ -1,7 +1,7 @@
 import { NextRequest } from 'next/server';
 import { pgDb } from '@/core/store/db-store';
 import { evaluateRealTimeAccountStatus } from '@/core/financing/due-tracker';
-import { applyPaymentWaterfall } from '@/core/financing/waterfall';
+import { applyPaymentWaterfall, PaymentAllocationMode } from '@/core/financing/waterfall';
 import { getTenantIdFromRequest, apiSuccess, apiError } from '@/lib/api-helpers';
 
 export async function POST(
@@ -31,27 +31,53 @@ export async function POST(
     const paymentDate = body.paymentDate || new Date().toISOString();
     const referenceNo = body.referenceNo || `PAY-${Date.now()}`;
     const paymentMethod = body.paymentMethod || 'BANK_TRANSFER';
+    const allocationMode: PaymentAllocationMode = body.allocationMode || 'WATERFALL';
 
-    // 1. Evaluate real-time accrued late fee as of payment date
-    const realtimeStatus = evaluateRealTimeAccountStatus(account.schedule, account.lateFeeRatePA, paymentDate.split('T')[0]);
+    // 1. Evaluate real-time accrued late fee (subtracting previously paid late fees)
+    const paidLateFeesMap = await pgDb.getPaidLateFeesMap(tenantId, id);
+    const paidLateFee = paidLateFeesMap[id] || 0;
+    const realtimeStatus = evaluateRealTimeAccountStatus(
+      account.schedule,
+      account.lateFeeRatePA,
+      paymentDate.split('T')[0],
+      paidLateFee
+    );
 
-    // 2. Apply Payment Allocation Waterfall
+    if (allocationMode === 'LATE_FEE_ONLY') {
+      if (realtimeStatus.accruedLateFee <= 0) {
+        return apiError('No unpaid late payment charges are currently due on this account.');
+      }
+      if (amount > realtimeStatus.accruedLateFee + 0.001) {
+        return apiError(`Amount (RM ${amount.toFixed(2)}) exceeds total unpaid late charges (RM ${realtimeStatus.accruedLateFee.toFixed(2)}). Use Standard Waterfall to pay both late fees and installments.`);
+      }
+    }
+
+    // 2. Apply Payment Allocation Waterfall / Targeted Mode
     const waterfallResult = applyPaymentWaterfall(
       account.schedule,
       amount,
       realtimeStatus.accruedLateFee,
-      paymentDate
+      paymentDate,
+      allocationMode
     );
 
-    // 3. Check if all installments are fully settled
+    // 3. Check if all installments AND late fees are fully settled
     const isFullyPaid = waterfallResult.updatedSchedule.every(item => item.status === 'PAID');
-    const newStatus = isFullyPaid ? 'SETTLED' : 'ACTIVE';
+    const remainingLateFee = Math.max(0, realtimeStatus.accruedLateFee - waterfallResult.allocatedToLateFee);
+    const newStatus = isFullyPaid && remainingLateFee <= 0 ? 'SETTLED' : 'ACTIVE';
 
     // 4. Update account with new schedule and status
     const updatedAccount = await pgDb.updateAccount(tenantId, id, {
       schedule: waterfallResult.updatedSchedule,
       status: newStatus,
     });
+
+    const defaultRemarks =
+      allocationMode === 'LATE_FEE_ONLY'
+        ? `Targeted Late Payment Charge settlement of RM ${amount.toFixed(2)}`
+        : allocationMode === 'INSTALLMENT_ONLY'
+        ? `Installment-Only Repayment of RM ${amount.toFixed(2)} (Profit: RM ${waterfallResult.allocatedToProfit.toFixed(2)}, Principal: RM ${waterfallResult.allocatedToPrincipal.toFixed(2)})`
+        : `Repayment of RM ${amount.toFixed(2)} (Late Fee: RM ${waterfallResult.allocatedToLateFee.toFixed(2)}, Profit: RM ${waterfallResult.allocatedToProfit.toFixed(2)}, Principal: RM ${waterfallResult.allocatedToPrincipal.toFixed(2)})`;
 
     // 5. Record repayment audit transaction
     await pgDb.addTransaction(tenantId, {
@@ -64,7 +90,7 @@ export async function POST(
       excessAmount: waterfallResult.excessAmount,
       paymentMethod,
       referenceNo,
-      remarks: body.remarks || `Repayment of RM ${amount.toFixed(2)} received`,
+      remarks: body.remarks || defaultRemarks,
     });
 
     return apiSuccess({

@@ -12,6 +12,7 @@ import {
 import { Customer, FinancingAccount, FinancingTransaction } from '@/core/store/memory-store';
 import { RealTimeAccountStatus, ScheduleItem, SettlementQuotation, FinancingStatus } from '@/core/financing/types';
 import { getCalcMethodLabel } from '@/core/financing/calculator';
+import { applyPaymentWaterfall, PaymentAllocationMode } from '@/core/financing/waterfall';
 
 interface AccountDetail extends FinancingAccount {
   customer: Customer;
@@ -45,6 +46,7 @@ export default function FinancingDetailPage({ params }: { params: Promise<{ id: 
   const [isPaymentOpen, setIsPaymentOpen] = useState(false);
   const [paymentAmount, setPaymentAmount] = useState('');
   const [paymentDate, setPaymentDate] = useState(new Date().toISOString().split('T')[0]);
+  const [allocationMode, setAllocationMode] = useState<PaymentAllocationMode>('WATERFALL');
   const [paymentMsg, setPaymentMsg] = useState<string | null>(null);
 
   // Early Settlement Modal
@@ -137,6 +139,7 @@ export default function FinancingDetailPage({ params }: { params: Promise<{ id: 
         body: JSON.stringify({
           amount: Number(paymentAmount),
           paymentDate,
+          allocationMode,
         }),
       });
       const data = await res.json();
@@ -154,6 +157,7 @@ export default function FinancingDetailPage({ params }: { params: Promise<{ id: 
           setIsPaymentOpen(false);
           setPaymentMsg(null);
           setPaymentAmount('');
+          setAllocationMode('WATERFALL');
         }, 3000);
       } else {
         alert(data.error);
@@ -548,6 +552,9 @@ export default function FinancingDetailPage({ params }: { params: Promise<{ id: 
                   <div className="text-xs text-rose-600 font-semibold mt-1">
                     Arrears: RM {rt.totalArrearsDue.toFixed(2)} (+RM {rt.accruedLateFee.toFixed(2)} late fee)
                   </div>
+                  <div className="text-[10px] text-slate-400 mt-0.5" title="Formula: Sum(Unpaid Installment × Late Rate% × Days Overdue / 365)">
+                    Late charge @ {account.lateFeeRatePA || 1}% p.a. daily on unpaid installments
+                  </div>
                 </div>
               ) : rt?.accountStatus === 'SETTLED' ? (
                 <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-bold bg-emerald-50 text-emerald-700 border border-emerald-200">
@@ -555,9 +562,23 @@ export default function FinancingDetailPage({ params }: { params: Promise<{ id: 
                   Fully Settled
                 </span>
               ) : isActive ? (
-                <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200">
-                  Active (On Time)
-                </span>
+                <div>
+                  {rt?.accountStatus === 'DUE' ? (
+                    <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-bold bg-amber-50 text-amber-700 border border-amber-200">
+                      <Clock className="w-3.5 h-3.5 mr-1 text-amber-500" />
+                      Payment Due
+                    </span>
+                  ) : (
+                    <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200">
+                      Active (On Time)
+                    </span>
+                  )}
+                  {(rt?.accruedLateFee || 0) > 0 && (
+                    <div className="text-xs text-rose-600 font-semibold mt-1">
+                      Unpaid Late Fee: RM {rt.accruedLateFee.toFixed(2)}
+                    </div>
+                  )}
+                </div>
               ) : (
                 <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold bg-slate-100 text-slate-700">
                   Pending Payout
@@ -1064,71 +1085,230 @@ export default function FinancingDetailPage({ params }: { params: Promise<{ id: 
       )}
 
       {/* Repayment Modal */}
-      {isPaymentOpen && (
-        <div className="fixed inset-0 bg-slate-950/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="bg-white max-w-md w-full rounded-3xl shadow-2xl border border-slate-200 p-6 space-y-4">
-            <div className="flex justify-between items-start">
+      {isPaymentOpen && (() => {
+        const parsedAmount = Number(paymentAmount) || 0;
+        const preview = parsedAmount > 0
+          ? applyPaymentWaterfall(
+              account.schedule,
+              parsedAmount,
+              rt?.accruedLateFee || 0,
+              paymentDate,
+              allocationMode
+            )
+          : null;
+        const exceedsLateFee = allocationMode === 'LATE_FEE_ONLY' && parsedAmount > ((rt?.accruedLateFee || 0) + 0.001);
+
+        return (
+          <div className="fixed inset-0 bg-slate-950/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+            <div className="bg-white max-w-lg w-full rounded-3xl shadow-2xl border border-slate-200 p-6 space-y-4 max-h-[92vh] overflow-y-auto">
+              <div className="flex justify-between items-start">
+                <div>
+                  <h3 className="font-bold text-slate-900 text-base">Record Repayment</h3>
+                  <p className="text-xs text-slate-500 mt-0.5 font-mono">{account.accountNo} • {account.customer?.fullName}</p>
+                </div>
+                <button onClick={() => setIsPaymentOpen(false)} className="text-slate-400 hover:text-slate-600 font-bold text-lg cursor-pointer">&times;</button>
+              </div>
+
+              {(rt?.totalArrearsDue > 0 || rt?.accruedLateFee > 0) && (
+                <div className="bg-rose-50/80 border border-rose-200 p-3.5 rounded-2xl text-xs text-rose-900 space-y-1.5">
+                  <div className="font-bold flex items-center justify-between">
+                    <span>Current Overdue Summary ({rt.daysPastDue} DPD)</span>
+                    <span className="font-mono text-rose-700">Total: RM {(rt.totalArrearsDue + rt.accruedLateFee).toFixed(2)}</span>
+                  </div>
+                  <div className="grid grid-cols-2 gap-2 pt-1 text-[11px] text-rose-800">
+                    <div className="bg-white/70 px-2.5 py-1.5 rounded-xl border border-rose-100">
+                      <span className="text-rose-500 block">Installment Arrears</span>
+                      <span className="font-bold">RM {rt.totalArrearsDue.toFixed(2)}</span>
+                    </div>
+                    <div className="bg-white/70 px-2.5 py-1.5 rounded-xl border border-rose-100">
+                      <span className="text-rose-500 block">Late Fee ({account.lateFeeRatePA || 1}% p.a.)</span>
+                      <span className="font-bold">RM {rt.accruedLateFee.toFixed(2)}</span>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Payment Allocation Target Selector */}
               <div>
-                <h3 className="font-bold text-slate-900 text-base">Record Repayment</h3>
-                <p className="text-xs text-slate-500 mt-0.5">{account.accountNo} • {account.customer?.fullName}</p>
+                <label className="block text-xs font-bold text-slate-700 mb-1.5">Payment Allocation Method</label>
+                <div className="grid grid-cols-3 gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setAllocationMode('WATERFALL')}
+                    className={`p-2 rounded-xl border text-left transition cursor-pointer ${
+                      allocationMode === 'WATERFALL'
+                        ? 'bg-indigo-50 border-indigo-500 text-indigo-900 ring-1 ring-indigo-500'
+                        : 'bg-slate-50 border-slate-200 text-slate-600 hover:bg-slate-100'
+                    }`}
+                  >
+                    <div className="text-[11px] font-bold">Standard Waterfall</div>
+                    <div className="text-[10px] opacity-75 mt-0.5 leading-tight">Late Fee &rarr; Profit &rarr; Prin</div>
+                  </button>
+
+                  <button
+                    type="button"
+                    disabled={(rt?.accruedLateFee || 0) <= 0}
+                    onClick={() => {
+                      setAllocationMode('LATE_FEE_ONLY');
+                      if (rt?.accruedLateFee > 0) {
+                        setPaymentAmount(rt.accruedLateFee.toFixed(2));
+                      }
+                    }}
+                    className={`p-2 rounded-xl border text-left transition cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed ${
+                      allocationMode === 'LATE_FEE_ONLY'
+                        ? 'bg-rose-50 border-rose-500 text-rose-900 ring-1 ring-rose-500'
+                        : 'bg-slate-50 border-slate-200 text-slate-600 hover:bg-slate-100'
+                    }`}
+                  >
+                    <div className="text-[11px] font-bold">Late Fee Only</div>
+                    <div className="text-[10px] opacity-75 mt-0.5 leading-tight">Pay Ta&apos;widh / LPC only</div>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => setAllocationMode('INSTALLMENT_ONLY')}
+                    className={`p-2 rounded-xl border text-left transition cursor-pointer ${
+                      allocationMode === 'INSTALLMENT_ONLY'
+                        ? 'bg-emerald-50 border-emerald-500 text-emerald-900 ring-1 ring-emerald-500'
+                        : 'bg-slate-50 border-slate-200 text-slate-600 hover:bg-slate-100'
+                    }`}
+                  >
+                    <div className="text-[11px] font-bold">Installment Only</div>
+                    <div className="text-[10px] opacity-75 mt-0.5 leading-tight">Skip Late Fee (Prin/Prof)</div>
+                  </button>
+                </div>
               </div>
-              <button onClick={() => setIsPaymentOpen(false)} className="text-slate-400 hover:text-slate-600 font-bold text-lg cursor-pointer">&times;</button>
-            </div>
 
-            {rt?.totalArrearsDue > 0 && (
-              <div className="bg-rose-50 border border-rose-200 p-3.5 rounded-2xl text-xs text-rose-800 space-y-1">
-                <div className="font-bold">Overdue Arrears Detected:</div>
-                <div>Arrears: RM {rt.totalArrearsDue.toFixed(2)}</div>
-                <div>Late Charges: RM {rt.accruedLateFee.toFixed(2)}</div>
+              {/* Quick Fill Chips */}
+              <div className="flex flex-wrap gap-1.5">
+                {rt?.accruedLateFee > 0 && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setAllocationMode('LATE_FEE_ONLY');
+                      setPaymentAmount(rt.accruedLateFee.toFixed(2));
+                    }}
+                    className="text-[11px] font-bold px-2.5 py-1 rounded-lg bg-rose-50 text-rose-700 border border-rose-200 hover:bg-rose-100 transition cursor-pointer"
+                  >
+                    Pay Late Fee: RM {rt.accruedLateFee.toFixed(2)}
+                  </button>
+                )}
+                <button
+                  type="button"
+                  onClick={() => {
+                    setAllocationMode('WATERFALL');
+                    setPaymentAmount(account.monthlyInstallment.toFixed(2));
+                  }}
+                  className="text-[11px] font-bold px-2.5 py-1 rounded-lg bg-slate-100 text-slate-700 border border-slate-200 hover:bg-slate-200 transition cursor-pointer"
+                >
+                  1 Installment: RM {account.monthlyInstallment.toFixed(2)}
+                </button>
+                {(rt?.totalArrearsDue + rt?.accruedLateFee) > 0 && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setAllocationMode('WATERFALL');
+                      setPaymentAmount((rt.totalArrearsDue + rt.accruedLateFee).toFixed(2));
+                    }}
+                    className="text-[11px] font-bold px-2.5 py-1 rounded-lg bg-indigo-50 text-indigo-700 border border-indigo-200 hover:bg-indigo-100 transition cursor-pointer"
+                  >
+                    Clear Total Due: RM {(rt.totalArrearsDue + rt.accruedLateFee).toFixed(2)}
+                  </button>
+                )}
               </div>
-            )}
 
-            <div>
-              <label className="block text-xs font-bold text-slate-700 mb-1.5">Repayment Amount (RM)</label>
-              <input
-                type="number"
-                step="0.01"
-                value={paymentAmount}
-                onChange={e => setPaymentAmount(e.target.value)}
-                className="w-full text-base font-extrabold p-3 rounded-xl border border-slate-200 bg-slate-50/50 focus:bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
-              />
-            </div>
-
-            <div>
-              <label className="block text-xs font-bold text-slate-700 mb-1.5">Payment Date</label>
-              <input
-                type="date"
-                value={paymentDate}
-                onChange={e => setPaymentDate(e.target.value)}
-                className="w-full text-sm p-2.5 rounded-xl border border-slate-200 bg-slate-50/50 focus:bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
-              />
-            </div>
-
-            {paymentMsg && (
-              <div className="bg-emerald-50 border border-emerald-200 p-3.5 rounded-2xl text-xs text-emerald-800 whitespace-pre-line font-semibold">
-                {paymentMsg}
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-xs font-bold text-slate-700 mb-1.5">Repayment Amount (RM)</label>
+                  <input
+                    type="number"
+                    step="0.01"
+                    value={paymentAmount}
+                    onChange={e => setPaymentAmount(e.target.value)}
+                    placeholder="0.00"
+                    className="w-full text-base font-extrabold p-2.5 rounded-xl border border-slate-200 bg-slate-50/50 focus:bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-bold text-slate-700 mb-1.5">Payment Date</label>
+                  <input
+                    type="date"
+                    value={paymentDate}
+                    onChange={e => setPaymentDate(e.target.value)}
+                    className="w-full text-sm p-2.5 rounded-xl border border-slate-200 bg-slate-50/50 focus:bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                  />
+                </div>
               </div>
-            )}
 
-            <div className="pt-2 flex space-x-2">
-              <button
-                type="button"
-                onClick={() => setIsPaymentOpen(false)}
-                className="flex-1 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold py-3 rounded-xl transition cursor-pointer"
-              >
-                Cancel
-              </button>
-              <button
-                type="button"
-                onClick={handleProcessPayment}
-                className="flex-1 bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold py-3 rounded-xl shadow-md shadow-indigo-600/25 transition cursor-pointer"
-              >
-                Apply Waterfall Payment
-              </button>
+              {/* Live Allocation Breakdown Preview */}
+              {preview && (
+                <div className={`p-3.5 rounded-2xl border text-xs space-y-1.5 ${
+                  exceedsLateFee
+                    ? 'bg-amber-50 border-amber-300 text-amber-900'
+                    : 'bg-slate-50 border-slate-200 text-slate-700'
+                }`}>
+                  <div className="font-bold text-[11px] uppercase tracking-wider text-slate-500">
+                    Real-Time Allocation Preview
+                  </div>
+                  <div className="flex justify-between">
+                    <span>Applied to Late Fee / Ta&apos;widh:</span>
+                    <span className={`font-bold ${preview.allocatedToLateFee > 0 ? 'text-rose-600' : 'text-slate-400'}`}>
+                      RM {preview.allocatedToLateFee.toFixed(2)}
+                    </span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span>Applied to Profit / Interest:</span>
+                    <span className={`font-bold ${preview.allocatedToProfit > 0 ? 'text-indigo-700' : 'text-slate-400'}`}>
+                      RM {preview.allocatedToProfit.toFixed(2)}
+                    </span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span>Applied to Principal:</span>
+                    <span className={`font-bold ${preview.allocatedToPrincipal > 0 ? 'text-emerald-700' : 'text-slate-400'}`}>
+                      RM {preview.allocatedToPrincipal.toFixed(2)}
+                    </span>
+                  </div>
+                  {preview.excessAmount > 0 && (
+                    <div className="flex justify-between pt-1 border-t border-slate-200 text-amber-700 font-bold">
+                      <span>Unallocated Surplus:</span>
+                      <span>RM {preview.excessAmount.toFixed(2)}</span>
+                    </div>
+                  )}
+                  {exceedsLateFee && (
+                    <div className="text-[11px] text-amber-800 pt-1 font-medium">
+                      ⚠️ Amount exceeds unpaid late charges (RM {rt.accruedLateFee.toFixed(2)}). Switch to &quot;Standard Waterfall&quot; to apply the rest to installments.
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {paymentMsg && (
+                <div className="bg-emerald-50 border border-emerald-200 p-3.5 rounded-2xl text-xs text-emerald-800 whitespace-pre-line font-semibold">
+                  {paymentMsg}
+                </div>
+              )}
+
+              <div className="pt-2 flex space-x-2">
+                <button
+                  type="button"
+                  onClick={() => setIsPaymentOpen(false)}
+                  className="flex-1 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold py-3 rounded-xl transition cursor-pointer"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="button"
+                  disabled={!paymentAmount || parsedAmount <= 0 || exceedsLateFee}
+                  onClick={handleProcessPayment}
+                  className="flex-1 bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 disabled:cursor-not-allowed text-white text-xs font-bold py-3 rounded-xl shadow-md shadow-indigo-600/25 transition cursor-pointer"
+                >
+                  Confirm &amp; Record Payment
+                </button>
+              </div>
             </div>
           </div>
-        </div>
-      )}
+        );
+      })()}
 
       {/* Early Settlement Modal */}
       {isSettleOpen && (
