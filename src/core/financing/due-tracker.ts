@@ -3,6 +3,13 @@ import { ScheduleItem, RealTimeAccountStatus } from './types';
 import { roundCurrency } from './calculator';
 
 /**
+ * Returns today's calendar date in Malaysia Standard Time (UTC+8) as YYYY-MM-DD
+ */
+export function getTodayMYT(): string {
+  return new Date(Date.now() + 8 * 60 * 60 * 1000).toISOString().split('T')[0];
+}
+
+/**
  * Calculates calendar days between two YYYY-MM-DD date strings
  */
 export function getDaysDifference(fromDateStr: string, toDateStr: string): number {
@@ -23,7 +30,7 @@ export function getDaysDifference(fromDateStr: string, toDateStr: string): numbe
  * 
  * @param schedule List of all installment schedule items for this loan
  * @param lateFeeRatePA Annual late payment penalty rate (e.g. 1% or 8% p.a., default 1%)
- * @param asOfDate Evaluation date (defaults to current server date in YYYY-MM-DD)
+ * @param asOfDate Evaluation date (defaults to current Malaysia date in YYYY-MM-DD)
  */
 export function evaluateRealTimeAccountStatus(
   schedule: ScheduleItem[],
@@ -31,7 +38,7 @@ export function evaluateRealTimeAccountStatus(
   asOfDate?: string,
   paidLateFee: number = 0
 ): RealTimeAccountStatus {
-  const today = asOfDate ?? new Date().toISOString().split('T')[0];
+  const today = asOfDate ?? getTodayMYT();
 
   let overdueInstallmentsCount = 0;
   let overduePrincipal = new Decimal(0);

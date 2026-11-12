@@ -3,9 +3,10 @@
 import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
 import DashboardLayout from '@/components/layout/DashboardLayout';
-import { DollarSign, ArrowLeft, ShieldCheck, CheckCircle2 } from 'lucide-react';
+import { DollarSign, ArrowLeft, ShieldCheck, CheckCircle2, Loader2 } from 'lucide-react';
 import { FinancingAccount } from '@/core/store/memory-store';
 import { SettlementQuotation } from '@/core/financing/types';
+import { getTodayMYT } from '@/core/financing/due-tracker';
 
 interface ExtendedAccount extends FinancingAccount {
   customerName: string;
@@ -14,7 +15,7 @@ interface ExtendedAccount extends FinancingAccount {
 export default function SettlementPage() {
   const [accounts, setAccounts] = useState<ExtendedAccount[]>([]);
   const [selectedAccountId, setSelectedAccountId] = useState('');
-  const [settleDate, setSettleDate] = useState(new Date().toISOString().split('T')[0]);
+  const [settleDate, setSettleDate] = useState(getTodayMYT());
   const [quote, setQuote] = useState<SettlementQuotation | null>(null);
   const [loading, setLoading] = useState(false);
 
@@ -139,9 +140,10 @@ export default function SettlementPage() {
               type="button"
               disabled={loading || accounts.length === 0}
               onClick={handleComputeQuote}
-              className="w-full bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs py-3 rounded-xl transition shadow-sm disabled:opacity-50 cursor-pointer"
+              className="w-full bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs py-3 rounded-xl transition shadow-sm disabled:opacity-50 cursor-pointer flex items-center justify-center space-x-2"
             >
-              {loading ? 'Computing Rebate...' : 'Generate Real-Time Settlement Quotation'}
+              {loading && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
+              <span>{loading ? 'Computing Rebate...' : 'Generate Real-Time Settlement Quotation'}</span>
             </button>
           </div>
 

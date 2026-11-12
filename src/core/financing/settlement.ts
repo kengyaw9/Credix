@@ -1,7 +1,7 @@
 import { Decimal } from 'decimal.js';
 import { ScheduleItem, SettlementQuotation } from './types';
 import { roundCurrency } from './calculator';
-import { evaluateRealTimeAccountStatus } from './due-tracker';
+import { evaluateRealTimeAccountStatus, getTodayMYT } from './due-tracker';
 
 /**
  * Early Settlement Engine (Rebate / Ibra' Computation)
@@ -15,7 +15,7 @@ export function calculateEarlySettlementQuote(
   settlementDateStr?: string,
   paidLateFee: number = 0
 ): SettlementQuotation {
-  const asOfDate = settlementDateStr ?? new Date().toISOString().split('T')[0];
+  const asOfDate = settlementDateStr ?? getTodayMYT();
 
   // 1. Get real-time status as of today
   const status = evaluateRealTimeAccountStatus(schedule, lateFeeRatePA, asOfDate, paidLateFee);

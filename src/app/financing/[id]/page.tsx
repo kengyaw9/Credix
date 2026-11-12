@@ -7,12 +7,14 @@ import {
   ArrowLeft, CreditCard, User, AlertTriangle, CheckCircle2, 
   Clock, DollarSign, Calendar, ArrowUpRight, Receipt, FileText,
   ShieldCheck, Banknote, Percent, TrendingUp, History, ListOrdered, Tag, ArrowDownRight, Layers,
-  XCircle, CheckCircle, Send, ArrowRight
+  XCircle, CheckCircle, Send, ArrowRight, RefreshCw, Loader2
 } from 'lucide-react';
 import { Customer, FinancingAccount, FinancingTransaction } from '@/core/store/memory-store';
 import { RealTimeAccountStatus, ScheduleItem, SettlementQuotation, FinancingStatus } from '@/core/financing/types';
 import { getCalcMethodLabel } from '@/core/financing/calculator';
 import { applyPaymentWaterfall, PaymentAllocationMode } from '@/core/financing/waterfall';
+import { calculateEarlySettlementQuote } from '@/core/financing/settlement';
+import { getTodayMYT } from '@/core/financing/due-tracker';
 
 interface AccountDetail extends FinancingAccount {
   customer: Customer;
@@ -45,14 +47,16 @@ export default function FinancingDetailPage({ params }: { params: Promise<{ id: 
   // Repayment Modal
   const [isPaymentOpen, setIsPaymentOpen] = useState(false);
   const [paymentAmount, setPaymentAmount] = useState('');
-  const [paymentDate, setPaymentDate] = useState(new Date().toISOString().split('T')[0]);
+  const [paymentDate, setPaymentDate] = useState(getTodayMYT());
   const [allocationMode, setAllocationMode] = useState<PaymentAllocationMode>('WATERFALL');
   const [paymentMsg, setPaymentMsg] = useState<string | null>(null);
 
   // Early Settlement Modal
   const [isSettleOpen, setIsSettleOpen] = useState(false);
-  const [settleDate, setSettleDate] = useState(new Date().toISOString().split('T')[0]);
+  const [settleDate, setSettleDate] = useState(getTodayMYT());
   const [settleQuote, setSettleQuote] = useState<SettlementQuotation | null>(null);
+  const [settleLoading, setSettleLoading] = useState(false);
+  const [settleVerified, setSettleVerified] = useState(false);
 
   // Tab & Filter States
   const [activeTab, setActiveTab] = useState<'SCHEDULE' | 'HISTORY'>('SCHEDULE');
@@ -167,16 +171,39 @@ export default function FinancingDetailPage({ params }: { params: Promise<{ id: 
     }
   };
 
-  // Settlement Quote & Execution
-  const handleGetSettleQuote = async () => {
+  // Instant Client-Side Settlement Quote Calculation (0ms UI responsiveness)
+  const computeInstantSettleQuote = (targetDate: string) => {
+    if (!account) return;
+    const paidLateFee = (account.transactions || []).reduce(
+      (sum, tx) => sum + (tx.allocatedLateFee || 0),
+      0
+    );
+    const instantQuote = calculateEarlySettlementQuote(
+      account.schedule,
+      account.lateFeeRatePA,
+      targetDate,
+      paidLateFee
+    );
+    setSettleQuote(instantQuote);
+    setSettleVerified(false);
+  };
+
+  // Settlement Quote & Execution (Backend Verified)
+  const handleGetSettleQuote = async (overrideDate?: string) => {
+    const targetDate = overrideDate || settleDate;
+    computeInstantSettleQuote(targetDate);
+    setSettleLoading(true);
     try {
-      const res = await fetch(`/api/v1/financing/accounts/${id}/settlement?asOfDate=${settleDate}`);
+      const res = await fetch(`/api/v1/financing/accounts/${id}/settlement?asOfDate=${targetDate}`);
       const data = await res.json();
       if (data.success) {
         setSettleQuote(data.data.quotation);
+        setSettleVerified(true);
       }
     } catch {
-      alert('Failed to compute settlement quote');
+      alert('Failed to verify settlement quote with server');
+    } finally {
+      setSettleLoading(false);
     }
   };
 
@@ -355,7 +382,7 @@ export default function FinancingDetailPage({ params }: { params: Promise<{ id: 
                 <button
                   onClick={() => {
                     setIsSettleOpen(true);
-                    handleGetSettleQuote();
+                    handleGetSettleQuote(settleDate);
                   }}
                   className="bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold px-4 py-2.5 rounded-xl shadow-sm transition cursor-pointer"
                 >
@@ -1328,22 +1355,61 @@ export default function FinancingDetailPage({ params }: { params: Promise<{ id: 
                 <input
                   type="date"
                   value={settleDate}
-                  onChange={e => setSettleDate(e.target.value)}
+                  onChange={e => {
+                    const nextDate = e.target.value;
+                    setSettleDate(nextDate);
+                    if (nextDate) {
+                      computeInstantSettleQuote(nextDate);
+                    }
+                  }}
                   className="flex-1 text-sm p-2.5 rounded-xl border border-slate-200 bg-slate-50/50 focus:bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
                 />
                 <button
                   type="button"
-                  onClick={handleGetSettleQuote}
-                  className="bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold px-4 rounded-xl transition cursor-pointer"
+                  disabled={settleLoading}
+                  onClick={() => handleGetSettleQuote(settleDate)}
+                  className="bg-slate-900 hover:bg-slate-800 disabled:opacity-70 text-white text-xs font-bold px-4 rounded-xl transition flex items-center space-x-1.5 cursor-pointer min-w-[125px] justify-center"
                 >
-                  Recalculate
+                  {settleLoading ? (
+                    <>
+                      <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                      <span>Computing...</span>
+                    </>
+                  ) : (
+                    <>
+                      <RefreshCw className="w-3.5 h-3.5" />
+                      <span>Recalculate</span>
+                    </>
+                  )}
                 </button>
               </div>
             </div>
 
             {settleQuote && (
-              <div className="bg-slate-50 p-4.5 rounded-2xl border border-slate-200 space-y-2.5 text-xs">
-                <div className="flex justify-between text-slate-600">
+              <div className={`bg-slate-50 p-4.5 rounded-2xl border transition-all space-y-2.5 text-xs ${
+                settleLoading ? 'border-indigo-300 opacity-80' : 'border-slate-200'
+              }`}>
+                <div className="flex items-center justify-between border-b border-slate-200/80 pb-2">
+                  <span className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">
+                    Quotation as of <span className="font-mono text-slate-800">{settleQuote.asOfDate}</span>
+                  </span>
+                  {settleLoading ? (
+                    <span className="text-[10px] font-bold text-indigo-600 flex items-center space-x-1">
+                      <Loader2 className="w-3 h-3 animate-spin" />
+                      <span>Verifying...</span>
+                    </span>
+                  ) : settleVerified ? (
+                    <span className="text-[10px] font-bold text-emerald-700 bg-emerald-50 border border-emerald-200 px-2 py-0.5 rounded-full">
+                      ✓ Server Verified
+                    </span>
+                  ) : (
+                    <span className="text-[10px] font-bold text-indigo-700 bg-indigo-50 border border-indigo-200 px-2 py-0.5 rounded-full">
+                      ⚡ Instant Preview
+                    </span>
+                  )}
+                </div>
+
+                <div className="flex justify-between text-slate-600 pt-0.5">
                   <span>Outstanding Principal:</span>
                   <span className="font-bold text-slate-900">RM {settleQuote.principalOutstanding.toFixed(2)}</span>
                 </div>
