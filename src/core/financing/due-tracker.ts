@@ -57,6 +57,12 @@ export function evaluateRealTimeAccountStatus(
     const unpaidProfit = new Decimal(item.profitDue).minus(item.profitPaid);
     const unpaidTotal = unpaidPrincipal.plus(unpaidProfit);
 
+    // Always include historical crystallized late charges (ULTRON odiacc),
+    // even if the installment's principal/profit was subsequently settled
+    if (item.crystallizedLateFee && item.crystallizedLateFee > 0) {
+      totalAccruedLateFee = totalAccruedLateFee.plus(item.crystallizedLateFee);
+    }
+
     // Track total principal remaining across entire loan
     if (unpaidPrincipal.greaterThan(0)) {
       totalOutstandingPrincipal = totalOutstandingPrincipal.plus(unpaidPrincipal);
@@ -82,11 +88,13 @@ export function evaluateRealTimeAccountStatus(
         maxDaysPastDue = daysOverdue;
       }
 
-      // Dynamic Late Payment Charge (Ta'widh / Penalty)
-      // Formula: Unpaid Amount * (LateRatePA / 100) * (DaysOverdue / 365)
-      if (lateFeeRatePA > 0 && daysOverdue > 0) {
+      // Dynamic Late Payment Charge (Ta'widh / Penalty) from last crystallization date (ULTRON lodidate)
+      // Formula: Current Unpaid Amount * (LateRatePA / 100) * (Days Since Last Calc / 365)
+      const lastCalcDate = item.lastLateFeeCalcDate ?? item.dueDate;
+      const daysToAccrue = Math.max(0, getDaysDifference(lastCalcDate, today));
+      if (lateFeeRatePA > 0 && daysToAccrue > 0) {
         const dailyRate = new Decimal(lateFeeRatePA).dividedBy(100).dividedBy(365);
-        const itemLateFee = unpaidTotal.times(dailyRate).times(daysOverdue);
+        const itemLateFee = unpaidTotal.times(dailyRate).times(daysToAccrue);
         totalAccruedLateFee = totalAccruedLateFee.plus(itemLateFee);
       }
     }
@@ -117,4 +125,45 @@ export function evaluateRealTimeAccountStatus(
     nextDueInstallment,
     totalOutstandingBalance: roundCurrency(totalOutstandingPrincipal),
   };
+}
+
+/**
+ * Crystallizes (locks in) accrued late payment charges up to `transactionDateStr`
+ * on each overdue installment before a payment reduces its unpaid balance
+ * (matching ULTRON Core Banking `ls01_calc_odu` + `lodidate` + `odiacc` semantics).
+ */
+export function crystallizeLateFees(
+  schedule: ScheduleItem[],
+  lateFeeRatePA: number = 1.0,
+  transactionDateStr?: string
+): ScheduleItem[] {
+  const txDate = (transactionDateStr || getTodayMYT()).split('T')[0];
+
+  return schedule.map((item) => {
+    const unpaidPrincipal = Decimal.max(0, new Decimal(item.principalDue).minus(item.principalPaid));
+    const unpaidProfit = Decimal.max(0, new Decimal(item.profitDue).minus(item.profitPaid));
+    const unpaidTotal = unpaidPrincipal.plus(unpaidProfit);
+
+    if (item.dueDate < txDate && unpaidTotal.greaterThan(0)) {
+      const lastCalcDate = item.lastLateFeeCalcDate ?? item.dueDate;
+      const daysToAccrue = Math.max(0, getDaysDifference(lastCalcDate, txDate));
+
+      let nextCrystallized = new Decimal(item.crystallizedLateFee ?? 0);
+      if (daysToAccrue > 0) {
+        const incrementalFee = unpaidTotal
+          .times(new Decimal(lateFeeRatePA).div(100))
+          .times(daysToAccrue)
+          .div(365);
+        nextCrystallized = nextCrystallized.plus(incrementalFee);
+      }
+
+      return {
+        ...item,
+        crystallizedLateFee: nextCrystallized.toDecimalPlaces(6).toNumber(),
+        lastLateFeeCalcDate: txDate,
+      };
+    }
+
+    return item;
+  });
 }

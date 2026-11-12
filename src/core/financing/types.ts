@@ -67,6 +67,10 @@ export interface ScheduleItem {
   profitPaid: number;         // Amount of profit paid so far (starts at 0)
   status: InstallmentStatus;  // UNPAID, PARTIAL, PAID
   paidAt?: string;            // Timestamp when fully settled
+
+  // ULTRON-style Late Fee Crystallization (lodidate / odiacc)
+  crystallizedLateFee?: number;  // Historical accrued late charge locked in prior to partial/installment payments
+  lastLateFeeCalcDate?: string;  // YYYY-MM-DD of last late fee crystallization (ULTRON: lodidate)
 }
 
 /**

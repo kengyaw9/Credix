@@ -1,6 +1,6 @@
 import { NextRequest } from 'next/server';
 import { pgDb } from '@/core/store/db-store';
-import { evaluateRealTimeAccountStatus } from '@/core/financing/due-tracker';
+import { evaluateRealTimeAccountStatus, crystallizeLateFees, getTodayMYT } from '@/core/financing/due-tracker';
 import { applyPaymentWaterfall, PaymentAllocationMode } from '@/core/financing/waterfall';
 import { getTenantIdFromRequest, apiSuccess, apiError } from '@/lib/api-helpers';
 
@@ -28,7 +28,7 @@ export async function POST(
       return apiError('Payment amount must be greater than 0');
     }
 
-    const paymentDate = body.paymentDate || new Date().toISOString();
+    const paymentDate = body.paymentDate || getTodayMYT();
     const referenceNo = body.referenceNo || `PAY-${Date.now()}`;
     const paymentMethod = body.paymentMethod || 'BANK_TRANSFER';
     const allocationMode: PaymentAllocationMode = body.allocationMode || 'WATERFALL';
@@ -52,9 +52,16 @@ export async function POST(
       }
     }
 
-    // 2. Apply Payment Allocation Waterfall / Targeted Mode
-    const waterfallResult = applyPaymentWaterfall(
+    // 2. Crystallize late fees up to paymentDate before reducing installment balances,
+    //    then apply Payment Allocation Waterfall / Targeted Mode.
+    const crystallizedSchedule = crystallizeLateFees(
       account.schedule,
+      account.lateFeeRatePA,
+      paymentDate
+    );
+
+    const waterfallResult = applyPaymentWaterfall(
+      crystallizedSchedule,
       amount,
       realtimeStatus.accruedLateFee,
       paymentDate,
